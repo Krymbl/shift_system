@@ -1,6 +1,9 @@
 # Схема БД: сервис смен (MVP, автосервис)
 
-Версия от 02.11.2026 (смена ссылается на назначение вместо отдела и должности). Стек: Symfony + Doctrine + PostgreSQL.
+Версия от 04.11.2026 (сущности и миграции написаны; порядок колонок, имена индексов и ограничений
+приведены к одному стилю). Стек: Symfony + Doctrine + PostgreSQL.
+
+Рядом лежат два файла: [custom_sql.md](custom_sql.md) — весь ручной SQL миграций (индексы по выражению, частичные индексы, `COMMENT ON INDEX`, CHECK и комментарии к ним), и [migrations_up.md](migrations_up.md) — методы `up()` всех миграций.
 
 ## Содержание
 
@@ -39,7 +42,26 @@
 
 **Снимки.** Всё, что влияет на деньги и может измениться в каталоге, копируется в момент использования: ставка в смену, цены в задачу и в строку товара, пункты чек-листа в задачу, итог в заказ-наряд.
 
-**Что не делает Doctrine сама.** CHECK, индексы по выражению (`lower(name)`) и частичные индексы пишутся руками в миграциях. Следить, чтобы `doctrine:migrations:diff` не пытался их удалить. Индексы на внешние ключи `many-to-one` Doctrine создаёт сама.
+**Что не делает Doctrine сама.** Индексы на внешние ключи `many-to-one` Doctrine создаёт сама. Всё остальное делится по одному правилу:
+
+- **В атрибутах сущности** — только то, что Doctrine умеет выразить: обычные индексы по колонкам, `unique: true`, составные уникальные по колонкам.
+- **Только в миграции, сырым SQL** — индексы по выражению (`lower(name)`), частичные индексы (`WHERE ...`) и все CHECK. Такие индексы в атрибутах не объявляются вообще.
+
+Чтобы `doctrine:migrations:diff` не предлагал удалить или пересоздать ручные индексы, их имена перечислены в `IgnoredIndexesSchemaManager` (`src/Common/Doctrine/Schema/`): он подключён через DBAL-middleware и убирает их из картины БД, которую видит сравнение схемы. Имя индекса должно быть либо в атрибуте сущности, либо в этом списке — никогда в обоих местах сразу, иначе diff будет бесконечно предлагать `CREATE` или `DROP`.
+
+CHECK прятать не нужно: DBAL их не читает и в diff они не попадают.
+
+**Порядок колонок.** В сущности и в `CREATE TABLE`: `id` → ключевые (статус, имя) → данные → внешние ключи → даты и время (`_at`, затем `created_at`, `updated_at`). Doctrine ставит колонки внешних ключей в конец и при сравнении схемы порядок не проверяет, поэтому в миграции он выправляется руками один раз.
+
+**Имена индексов.**
+- Уникальный по всей таблице — суффикс `_uniq`: `location_name_lower_uniq`, `work_order_product_uniq`.
+- Уникальный частичный (только среди действующих строк) — суффикс `_active_uniq`: `shift_employee_active_uniq`, `employee_assignment_active_uniq`, `work_object_identifier_active_uniq`, `department_location_name_active_uniq`.
+- Неуникальный — без суффикса, имя говорит, для чего индекс: `task_active_by_location`, `ledger_entry_employee_history`, `task_checklist_item_by_task_position`.
+- Индексы, которые Doctrine создаёт сама на внешние ключи и на `unique: true`, остаются с её именами `IDX_…` / `UNIQ_…`: своё имя им задать нельзя. Поэтому ниже в блоках SQL такие индексы подписаны комментарием, а словесное описание каждого лежит в `COMMENT ON INDEX` (см. `custom_sql.md`).
+
+**Имена CHECK.** `<таблица>_<о чём>_check`: `users_gender_check`, `shift_status_fields_check`, `ledger_entry_comment_check`. У каждого есть `COMMENT ON CONSTRAINT` с объяснением, зачем он.
+
+**Служебные таблицы.** Кроме перечисленных ниже 18 таблиц, в базе есть `messenger_messages` — её просит doctrine-транспорт Symfony Messenger. Она не часть схемы предметной области, в diff появляется сама, и трогать её не нужно.
 
 **Где живут правила.**
 - В базе: всё, что видно в одной строке (CHECK) и уникальность (UNIQUE, частичные индексы).
@@ -62,8 +84,8 @@
 | phone | varchar(30) | да | Уникальный. Нормализуется в коде к одному формату |
 | password | varchar(255) | да | Хэш пароля |
 | roles | json | да | Список ролей, по умолчанию `'[]'` |
-| first_name | varchar(100) | да | Имя |
 | last_name | varchar(100) | да | Фамилия |
+| first_name | varchar(100) | да | Имя |
 | patronymic | varchar(100) | нет | Отчество |
 | birthday | date | нет | Дата рождения. Проверка разумности в валидаторе, не в SQL |
 | gender | varchar(1) | нет | `m` или `f` |
@@ -72,10 +94,11 @@
 
 **Ограничения в БД:**
 ```sql
-UNIQUE (email)
-UNIQUE (phone)
-CHECK (email = lower(email))
-CHECK (gender IN ('m', 'f'))
+UNIQUE (email)   -- UNIQ_1483A5E9E7927C74, из unique: true
+UNIQUE (phone)   -- UNIQ_1483A5E9444F97DD, из unique: true
+
+ALTER TABLE users ADD CONSTRAINT users_email_lower_check CHECK (email = lower(email));
+ALTER TABLE users ADD CONSTRAINT users_gender_check CHECK (gender IN ('m', 'f'));
 ```
 
 **Правила в коде:**
@@ -97,8 +120,10 @@ CHECK (gender IN ('m', 'f'))
 
 **Ограничения в БД:**
 ```sql
-UNIQUE (user_id)
-CHECK (fired_at IS NULL OR fired_at >= hired_at)
+UNIQUE (user_id)   -- UNIQ_5D9F75A1A76ED395, даёт one-to-one
+
+ALTER TABLE employee ADD CONSTRAINT employee_fired_at_check
+    CHECK (fired_at IS NULL OR (fired_at >= hired_at AND fired_at <= CURRENT_DATE));
 ```
 
 **Правила в коде:**
@@ -133,14 +158,15 @@ UNIQUE (user_id)
 |---|---|---|---|
 | id | int | да | ПК |
 | name | varchar(255) | да | Уникальное без учёта регистра, навсегда (имя закрытой точки не переиспользуется) |
-| phone | varchar(30) | нет | |
 | address | varchar(255) | да | Полный адрес |
+| phone | varchar(30) | нет | |
 | closed_at | date | нет | Дата закрытия, вводит админ |
 | created_at, updated_at | timestamptz | да | |
 
 ```sql
 CREATE UNIQUE INDEX location_name_lower_uniq ON location (lower(name));
-CHECK (closed_at <= CURRENT_DATE)
+
+ALTER TABLE location ADD CONSTRAINT location_closed_at_check CHECK (closed_at <= CURRENT_DATE);
 ```
 
 **Правила в коде:**
@@ -156,16 +182,17 @@ CHECK (closed_at <= CURRENT_DATE)
 | Поле | Тип | Обяз. | Описание |
 |---|---|---|---|
 | id | int | да | ПК |
-| location_id | → location | да | RESTRICT |
 | name | varchar(255) | да | Уникально среди незакрытых отделов точки |
+| location_id | → location | да | RESTRICT |
 | closed_at | date | нет | Дата закрытия |
 | created_at, updated_at | timestamptz | да | |
 
 ```sql
-CREATE UNIQUE INDEX department_location_name_active
+CREATE UNIQUE INDEX department_location_name_active_uniq
     ON department (location_id, lower(name))
     WHERE closed_at IS NULL;
-CHECK (closed_at <= CURRENT_DATE)
+
+ALTER TABLE department ADD CONSTRAINT department_closed_at_check CHECK (closed_at <= CURRENT_DATE);
 ```
 
 **В коде:** закрытие отдела закрывает его назначения; нельзя закрыть при открытых сменах.
@@ -183,7 +210,8 @@ CHECK (closed_at <= CURRENT_DATE)
 
 ```sql
 CREATE UNIQUE INDEX position_name_lower_uniq ON position (lower(name));
-CHECK (archived_at <= CURRENT_DATE)
+
+ALTER TABLE position ADD CONSTRAINT position_archived_at_check CHECK (archived_at <= CURRENT_DATE);
 ```
 
 **В коде:** нельзя архивировать при действующих назначениях.
@@ -195,20 +223,25 @@ CHECK (archived_at <= CURRENT_DATE)
 | Поле | Тип | Обяз. | Описание |
 |---|---|---|---|
 | id | int | да | ПК |
+| hourly_rate | bigint | да | Ставка в копейках за час, `>= 0` (0 — например, админ) |
 | employee_id | → employee | да | RESTRICT |
 | position_id | → position | да | RESTRICT |
 | department_id | → department | да | RESTRICT |
-| hourly_rate | bigint | да | Ставка в копейках за час, `>= 0` (0 — например, админ) |
 | started_at | date | да | Начало действия |
 | ended_at | date | нет | Конец действия, ставится день в день |
 | created_at, updated_at | timestamptz | да | |
 
 ```sql
-CHECK (hourly_rate >= 0)
-CHECK (ended_at IS NULL OR (ended_at >= started_at AND ended_at <= CURRENT_DATE))
-CREATE UNIQUE INDEX employee_assignment_unique
+CREATE UNIQUE INDEX employee_assignment_active_uniq
     ON employee_assignment (employee_id, department_id, position_id)
     WHERE ended_at IS NULL;
+
+ALTER TABLE employee_assignment ADD CONSTRAINT employee_assignment_hourly_rate_check
+    CHECK (hourly_rate >= 0);
+ALTER TABLE employee_assignment ADD CONSTRAINT employee_assignment_started_at_check
+    CHECK (started_at <= CURRENT_DATE);
+ALTER TABLE employee_assignment ADD CONSTRAINT employee_assignment_ended_at_check
+    CHECK (ended_at IS NULL OR (ended_at >= started_at AND ended_at <= CURRENT_DATE));
 ```
 
 **В коде:** `started_at >= hired_at`; нельзя назначить в закрытый отдел, на архивную должность или уволенному. Будущие даты не используются.
@@ -227,23 +260,25 @@ CREATE UNIQUE INDEX employee_assignment_unique
 |---|---|---|---|
 | id | int | да | ПК |
 | status | varchar(20) | да | `requested`, `rejected`, `open`, `closed`, `forced_closed` |
+| hourly_rate | bigint | нет | **Снимок** ставки из назначения при открытии |
 | employee_assignment_id | → employee_assignment | да | Назначение, по которому работает смена. Отдел, должность и точка берутся через него. RESTRICT |
 | employee_id | → employee | да | Сотрудник. Осознанная денормализация: дублирует сотрудника из назначения ради индекса «одна активная смена на человека». RESTRICT |
-| opened_at | timestamptz | нет | Момент открытия |
-| closed_at | timestamptz | нет | Момент закрытия |
-| hourly_rate | bigint | нет | **Снимок** ставки из назначения при открытии |
 | decided_by_id | → users | нет | Кто подтвердил или отклонил. RESTRICT |
 | closed_by_id | → users | нет | Кто закрыл. RESTRICT |
+| opened_at | timestamptz | нет | Момент открытия |
+| closed_at | timestamptz | нет | Момент закрытия |
 | created_at, updated_at | timestamptz | да | |
 
 ```sql
-CHECK (status IN ('requested', 'rejected', 'open', 'closed', 'forced_closed'))
-CHECK (closed_at > opened_at)
-CHECK (hourly_rate >= 0)
-
-CREATE UNIQUE INDEX shift_one_active_per_employee
+CREATE UNIQUE INDEX shift_employee_active_uniq
     ON shift (employee_id)
     WHERE status IN ('requested', 'open');
+
+ALTER TABLE shift ADD CONSTRAINT shift_status_check
+    CHECK (status IN ('requested', 'rejected', 'open', 'closed', 'forced_closed'));
+ALTER TABLE shift ADD CONSTRAINT shift_hourly_rate_check CHECK (hourly_rate >= 0);
+ALTER TABLE shift ADD CONSTRAINT shift_closed_at_check
+    CHECK (closed_at IS NULL OR closed_at >= opened_at);
 
 -- поля соответствуют статусу
 ALTER TABLE shift ADD CONSTRAINT shift_status_fields_check CHECK (
@@ -292,21 +327,22 @@ ALTER TABLE shift ADD CONSTRAINT shift_status_fields_check CHECK (
 | client_price | bigint | нет | Цена для клиента, `> 0`. Пусто у внутренних услуг |
 | employee_pay | bigint | да | Оплата исполнителю, `>= 0` |
 | duration_minutes | int | да | Норматив времени, `> 0`. Не дедлайн |
-| required_position_id | → position | нет | Рекомендуемая должность. RESTRICT |
 | is_internal | bool | да | Внутренняя (уборка, приёмка товара), по умолчанию false |
+| required_position_id | → position | нет | Рекомендуемая должность. RESTRICT |
 | archived_at | date | нет | |
 | created_at, updated_at | timestamptz | да | |
 
 ```sql
 CREATE UNIQUE INDEX service_type_name_lower_uniq ON service_type (lower(name));
-CHECK (client_price > 0)
-CHECK (employee_pay >= 0)
-CHECK (duration_minutes > 0)
-CHECK (archived_at <= CURRENT_DATE)
-CHECK (
+
+ALTER TABLE service_type ADD CONSTRAINT service_type_client_price_check CHECK (client_price > 0);
+ALTER TABLE service_type ADD CONSTRAINT service_type_employee_pay_check CHECK (employee_pay >= 0);
+ALTER TABLE service_type ADD CONSTRAINT service_type_duration_minutes_check CHECK (duration_minutes > 0);
+ALTER TABLE service_type ADD CONSTRAINT service_type_archived_at_check CHECK (archived_at <= CURRENT_DATE);
+ALTER TABLE service_type ADD CONSTRAINT service_type_internal_price_check CHECK (
     (is_internal = true  AND client_price IS NULL)
  OR (is_internal = false AND client_price IS NOT NULL)
-)
+);
 ```
 
 ### service_checklist_item
@@ -316,16 +352,21 @@ CHECK (
 | Поле | Тип | Обяз. | Описание |
 |---|---|---|---|
 | id | int | да | ПК |
-| service_type_id | → service_type | да | CASCADE |
 | position | int | да | Порядковый номер |
 | text | varchar(255) | да | Текст пункта |
+| service_type_id | → service_type | да | CASCADE |
 | created_at, updated_at | timestamptz | да | |
 
 ```sql
-UNIQUE (service_type_id, position)
+-- обычный индекс по колонкам, объявлен в атрибутах сущности
+CREATE INDEX service_checklist_item_by_service_type_position
+    ON service_checklist_item (service_type_id, position);
+
+ALTER TABLE service_checklist_item ADD CONSTRAINT service_checklist_item_position_check
+    CHECK (position > 0);
 ```
 
-**В коде:** менять и удалять пункты можно в любой момент, у задач свои копии. Перестановка двух пунктов — в два шага через временный отрицательный номер.
+**В коде:** менять и удалять пункты можно в любой момент, у задач свои копии. Уникальности позиции в БД нет осознанно: при сохранении чек-листа сервис перенумеровывает все пункты услуги подряд (1, 2, 3…) по порядку, который пришёл из интерфейса. Это снимает проблему перестановки двух пунктов — обычный уникальный индекс в PostgreSQL проверяется построчно и падал бы на первом же UPDATE. Чтение всегда `ORDER BY position, id`.
 
 ### product
 
@@ -343,10 +384,11 @@ UNIQUE (service_type_id, position)
 | created_at, updated_at | timestamptz | да | |
 
 ```sql
-UNIQUE (article)
-CHECK (price >= 0)
-CHECK (unit IN ('pcs', 'l', 'm', 'kg'))
-CHECK (archived_at <= CURRENT_DATE)
+UNIQUE (article)   -- UNIQ_D34A04ADCC7D1AC2, из unique: true
+
+ALTER TABLE product ADD CONSTRAINT product_price_check CHECK (price >= 0);
+ALTER TABLE product ADD CONSTRAINT product_unit_check CHECK (unit IN ('pcs', 'l', 'm', 'kg'));
+ALTER TABLE product ADD CONSTRAINT product_archived_at_check CHECK (archived_at <= CURRENT_DATE);
 ```
 
 **В коде:** у товара, который уже есть в заказ-нарядах, нельзя менять единицу измерения. Сменилась фасовка — архивировать старый товар и завести новый.
@@ -362,17 +404,19 @@ CHECK (archived_at <= CURRENT_DATE)
 | Поле | Тип | Обяз. | Описание |
 |---|---|---|---|
 | id | int | да | ПК |
-| client_id | → client | да | **Текущий** владелец. RESTRICT |
 | identifier | varchar(50) | нет | Для машин госномер. Уникален среди неархивных |
 | attributes | jsonb | да | Постоянные данные объекта: марка, модель, год, VIN. По умолчанию `'{}'` |
+| client_id | → client | да | **Текущий** владелец. RESTRICT |
 | archived_at | date | нет | |
 | created_at, updated_at | timestamptz | да | |
 
 ```sql
-CREATE UNIQUE INDEX work_object_identifier_active
+CREATE UNIQUE INDEX work_object_identifier_active_uniq
     ON work_object (identifier)
     WHERE archived_at IS NULL;
-CHECK (archived_at <= CURRENT_DATE)
+
+ALTER TABLE work_object ADD CONSTRAINT work_object_archived_at_check
+    CHECK (archived_at <= CURRENT_DATE);
 ```
 
 **Правила в коде:**
@@ -388,46 +432,53 @@ CHECK (archived_at <= CURRENT_DATE)
 | Поле | Тип | Обяз. | Описание |
 |---|---|---|---|
 | id | int | да | ПК |
-| client_id | → client | нет | **Снимок** владельца на момент визита. Пусто — анонимная покупка. RESTRICT |
-| work_object_id | → work_object | нет | Пусто — покупка без ремонта. RESTRICT |
-| location_id | → location | да | Точка. RESTRICT |
-| visit_info | jsonb | да | Данные визита: пробег, жалоба клиента. По умолчанию `'{}'` |
 | status | varchar(20) | да | `open`, `closed`, `cancelled`, по умолчанию `open` |
 | final_price_snapshot | bigint | нет | **Снимок** итога при закрытии, `>= 0` |
+| visit_info | jsonb | да | Данные визита: пробег, жалоба клиента. По умолчанию `'{}'` |
+| location_id | → location | да | Точка. RESTRICT |
+| client_id | → client | нет | **Снимок** владельца на момент визита. Пусто — анонимная покупка. RESTRICT |
+| work_object_id | → work_object | нет | Пусто — покупка без ремонта. RESTRICT |
 | created_by_id | → users | да | Админ, принявший заказ. RESTRICT |
-| closed_at | timestamptz | нет | Когда закрыли или отменили |
 | closed_by_id | → users | нет | Кто закрыл или отменил. RESTRICT |
+| closed_at | timestamptz | нет | Когда закрыли или отменили |
 | paid_at | timestamptz | нет | Когда оплатили |
 | payment_method | varchar(20) | нет | `cash`, `card`, `transfer` |
 | created_at, updated_at | timestamptz | да | |
 
 ```sql
-CHECK (status IN ('open', 'closed', 'cancelled'))
-CHECK (final_price_snapshot >= 0)
+-- горячий список: открытые заказы точки
+CREATE INDEX work_order_open_by_location
+    ON work_order (location_id)
+    WHERE status = 'open';
+
+ALTER TABLE work_order ADD CONSTRAINT work_order_status_check
+    CHECK (status IN ('open', 'closed', 'cancelled'));
+ALTER TABLE work_order ADD CONSTRAINT work_order_final_price_check
+    CHECK (final_price_snapshot >= 0);
 
 -- есть машина, значит есть клиент
-CHECK (work_object_id IS NULL OR client_id IS NOT NULL)
+ALTER TABLE work_order ADD CONSTRAINT work_order_client_object_check
+    CHECK (work_object_id IS NULL OR client_id IS NOT NULL);
 
 -- поля соответствуют статусу
-CHECK (
+ALTER TABLE work_order ADD CONSTRAINT work_order_status_fields_check CHECK (
     (status = 'open'
         AND closed_at IS NULL AND closed_by_id IS NULL AND final_price_snapshot IS NULL)
  OR (status = 'closed'
         AND closed_at IS NOT NULL AND closed_by_id IS NOT NULL AND final_price_snapshot IS NOT NULL)
  OR (status = 'cancelled'
         AND closed_at IS NOT NULL AND closed_by_id IS NOT NULL AND final_price_snapshot IS NULL)
-)
-CHECK (closed_at IS NULL OR closed_at >= created_at)
+);
+ALTER TABLE work_order ADD CONSTRAINT work_order_closed_at_check
+    CHECK (closed_at IS NULL OR closed_at >= created_at);
 
 -- оплата
-CHECK (payment_method IN ('cash', 'card', 'transfer'))
-CHECK ((paid_at IS NULL) = (payment_method IS NULL))
-CHECK (paid_at IS NULL OR (status = 'closed' AND paid_at >= closed_at))
-
--- горячий список: открытые заказы точки
-CREATE INDEX work_order_open_by_location
-    ON work_order (location_id)
-    WHERE status = 'open';
+ALTER TABLE work_order ADD CONSTRAINT work_order_payment_method_check
+    CHECK (payment_method IN ('cash', 'card', 'transfer'));
+ALTER TABLE work_order ADD CONSTRAINT work_order_payment_pair_check
+    CHECK ((paid_at IS NULL) = (payment_method IS NULL));
+ALTER TABLE work_order ADD CONSTRAINT work_order_paid_at_check
+    CHECK (paid_at IS NULL OR (status = 'closed' AND paid_at >= closed_at));
 ```
 
 **Правила в коде:**
@@ -445,16 +496,21 @@ CREATE INDEX work_order_open_by_location
 | Поле | Тип | Обяз. | Описание |
 |---|---|---|---|
 | id | int | да | ПК |
-| work_order_id | → work_order | да | RESTRICT |
-| product_id | → product | да | RESTRICT |
 | quantity | numeric(10,3) | да | Количество, `> 0`, до трёх знаков (4,5 л) |
 | unit_price | bigint | да | **Снимок** цены за единицу, `>= 0` |
+| work_order_id | → work_order | да | RESTRICT |
+| product_id | → product | да | RESTRICT |
 | created_at, updated_at | timestamptz | да | |
 
 ```sql
-UNIQUE (work_order_id, product_id)
-CHECK (quantity > 0)
-CHECK (unit_price >= 0)
+-- составной уникальный по колонкам, объявлен в атрибутах сущности
+CREATE UNIQUE INDEX work_order_product_uniq
+    ON work_order_product (work_order_id, product_id);
+
+ALTER TABLE work_order_product ADD CONSTRAINT work_order_product_quantity_check
+    CHECK (quantity > 0);
+ALTER TABLE work_order_product ADD CONSTRAINT work_order_product_unit_price_check
+    CHECK (unit_price >= 0);
 ```
 
 **Правила в коде:**
@@ -475,22 +531,28 @@ CHECK (unit_price >= 0)
 | id | int | да | ПК |
 | name | varchar(255) | да | Название, по умолчанию из услуги |
 | description | text | нет | Описание от админа |
+| status | varchar(20) | да | `new`, `assigned`, `in_progress`, `submitted`, `accepted`, `cancelled`, по умолчанию `new` |
+| employee_pay_snapshot | bigint | да | **Снимок** оплаты исполнителю, `>= 0` |
+| client_price_snapshot | bigint | нет | **Снимок** цены для клиента, `>= 0`. Пусто у внутренних |
 | location_id | → location | да | Точка. RESTRICT |
 | work_order_id | → work_order | нет | RESTRICT |
 | shift_id | → shift | нет | Смена исполнителя. Пусто в `new`. RESTRICT |
 | service_type_id | → service_type | нет | Пусто — разовая работа не из каталога. RESTRICT |
 | required_position_id | → position | нет | Рекомендуемая должность, по умолчанию из услуги. RESTRICT |
-| employee_pay_snapshot | bigint | да | **Снимок** оплаты исполнителю, `>= 0` |
-| client_price_snapshot | bigint | нет | **Снимок** цены для клиента, `>= 0`. Пусто у внутренних |
-| status | varchar(20) | да | `new`, `assigned`, `in_progress`, `submitted`, `accepted`, `cancelled`, по умолчанию `new` |
-| deadline_at | timestamptz | нет | Дедлайн |
 | created_by_id | → users | да | RESTRICT |
+| deadline_at | timestamptz | нет | Дедлайн |
 | created_at, updated_at | timestamptz | да | |
 
 ```sql
-CHECK (status IN ('new', 'assigned', 'in_progress', 'submitted', 'accepted', 'cancelled'))
-CHECK (employee_pay_snapshot >= 0)
-CHECK (client_price_snapshot >= 0)
+-- горячий список: активные задачи
+CREATE INDEX task_active_by_location
+    ON task (location_id, status)
+    WHERE status IN ('new', 'assigned', 'in_progress', 'submitted');
+
+ALTER TABLE task ADD CONSTRAINT task_status_check
+    CHECK (status IN ('new', 'assigned', 'in_progress', 'submitted', 'accepted', 'cancelled'));
+ALTER TABLE task ADD CONSTRAINT task_employee_pay_check CHECK (employee_pay_snapshot >= 0);
+ALTER TABLE task ADD CONSTRAINT task_client_price_check CHECK (client_price_snapshot >= 0);
 
 -- смена соответствует статусу
 ALTER TABLE task ADD CONSTRAINT task_status_shift_check CHECK (
@@ -498,11 +560,6 @@ ALTER TABLE task ADD CONSTRAINT task_status_shift_check CHECK (
  OR (status IN ('assigned', 'in_progress', 'submitted', 'accepted') AND shift_id IS NOT NULL)
  OR status = 'cancelled'
 );
-
--- горячий список: активные задачи
-CREATE INDEX task_active_by_location
-    ON task (location_id, status)
-    WHERE status IN ('new', 'assigned', 'in_progress', 'submitted');
 ```
 
 **Переходы (Workflow):**
@@ -530,16 +587,22 @@ CREATE INDEX task_active_by_location
 | Поле | Тип | Обяз. | Описание |
 |---|---|---|---|
 | id | int | да | ПК |
-| task_id | → task | да | CASCADE |
 | position | int | да | Порядковый номер |
 | text | varchar(255) | да | Текст, копия из шаблона или введён вручную |
-| checked_at | timestamptz | нет | Когда отметили |
+| task_id | → task | да | CASCADE |
 | checked_by_id | → users | нет | Кто отметил. RESTRICT |
+| checked_at | timestamptz | нет | Когда отметили |
 | created_at, updated_at | timestamptz | да | |
 
 ```sql
-UNIQUE (task_id, position)
-CHECK ((checked_at IS NULL) = (checked_by_id IS NULL))
+-- обычный индекс по колонкам, объявлен в атрибутах сущности
+CREATE INDEX task_checklist_item_by_task_position
+    ON task_checklist_item (task_id, position);
+
+ALTER TABLE task_checklist_item ADD CONSTRAINT task_checklist_item_position_check
+    CHECK (position > 0);
+ALTER TABLE task_checklist_item ADD CONSTRAINT task_checklist_item_checked_pair_check
+    CHECK ((checked_at IS NULL) = (checked_by_id IS NULL));
 ```
 
 **Правила в коде:**
@@ -554,25 +617,27 @@ CHECK ((checked_at IS NULL) = (checked_by_id IS NULL))
 | Поле | Тип | Обяз. | Описание |
 |---|---|---|---|
 | id | int | да | ПК |
-| task_id | → task | да | CASCADE |
 | from_status | varchar(20) | нет | Пусто у первой записи (создание) |
 | to_status | varchar(20) | да | |
-| shift_id | → shift | нет | Смена на момент перехода. RESTRICT |
 | comment | text | нет | Обязателен при возврате на доработку |
+| task_id | → task | да | CASCADE |
+| shift_id | → shift | нет | Смена на момент перехода. RESTRICT |
 | changed_by_id | → users | нет | Кто. Пусто = система. RESTRICT |
 | created_at | timestamptz | да | Когда |
 
 ```sql
-CHECK (
+-- обычный индекс по колонкам, объявлен в атрибутах сущности
+CREATE INDEX task_status_change_history ON task_status_change (task_id, created_at);
+
+ALTER TABLE task_status_change ADD CONSTRAINT task_status_change_status_check CHECK (
     (from_status IS NULL OR from_status IN ('new', 'assigned', 'in_progress', 'submitted', 'accepted', 'cancelled'))
     AND to_status IN ('new', 'assigned', 'in_progress', 'submitted', 'accepted', 'cancelled')
     AND (from_status IS NULL OR from_status <> to_status)
-)
-CHECK (
+);
+ALTER TABLE task_status_change ADD CONSTRAINT task_status_change_return_comment_check CHECK (
     NOT (from_status = 'submitted' AND to_status = 'in_progress')
     OR (comment IS NOT NULL AND btrim(comment) <> '')
-)
-CREATE INDEX task_status_change_history ON task_status_change (task_id, created_at);
+);
 ```
 
 Даёт: кто и когда брал задачу, сколько было возвратов и почему, реальное время выполнения против норматива услуги.
@@ -588,21 +653,26 @@ CREATE INDEX task_status_change_history ON task_status_change (task_id, created_
 | Поле | Тип | Обяз. | Описание |
 |---|---|---|---|
 | id | int | да | ПК |
-| employee_id | → employee | да | RESTRICT |
-| type | varchar(20) | да | `shift`, `task`, `bonus`, `penalty`, `payout`, `correction_plus`, `correction_minus` |
 | amount | bigint | да | Сумма в копейках, всегда `> 0`. Знак определяет тип (PHP enum `sign()`) |
+| type | varchar(20) | да | `shift`, `task`, `bonus`, `penalty`, `payout`, `correction_plus`, `correction_minus` |
+| comment | text | нет | Обязателен для всех типов, кроме `shift` и `task` |
+| employee_id | → employee | да | RESTRICT |
 | shift_id | → shift | нет | one-to-one, только для `shift`. RESTRICT |
 | task_id | → task | нет | one-to-one, только для `task`. RESTRICT |
 | corrected_entry_id | → ledger_entry | нет | Исправляемая запись, только для `correction_*`. RESTRICT |
-| comment | text | нет | Обязателен для всех типов, кроме `shift` и `task` |
 | created_by_id | → users | нет | Кто создал. Пусто = система. RESTRICT |
 | created_at | timestamptz | да | |
 
 ```sql
-UNIQUE (shift_id)
-UNIQUE (task_id)
-CHECK (type IN ('shift', 'task', 'bonus', 'penalty', 'payout', 'correction_plus', 'correction_minus'))
-CHECK (amount > 0)
+UNIQUE (shift_id)   -- UNIQ_64272A69BB70BC0E, даёт one-to-one
+UNIQUE (task_id)    -- UNIQ_64272A698DB60186, даёт one-to-one
+
+-- обычный индекс по колонкам, объявлен в атрибутах сущности
+CREATE INDEX ledger_entry_employee_history ON ledger_entry (employee_id, created_at);
+
+ALTER TABLE ledger_entry ADD CONSTRAINT ledger_entry_amount_check CHECK (amount > 0);
+ALTER TABLE ledger_entry ADD CONSTRAINT ledger_entry_type_check
+    CHECK (type IN ('shift', 'task', 'bonus', 'penalty', 'payout', 'correction_plus', 'correction_minus'));
 
 ALTER TABLE ledger_entry ADD CONSTRAINT ledger_entry_source_check CHECK (
     (type = 'shift' AND shift_id IS NOT NULL AND task_id IS NULL)
@@ -619,8 +689,6 @@ ALTER TABLE ledger_entry ADD CONSTRAINT ledger_entry_correction_check CHECK (
 ALTER TABLE ledger_entry ADD CONSTRAINT ledger_entry_comment_check CHECK (
     type IN ('shift', 'task') OR (comment IS NOT NULL AND btrim(comment) <> '')
 );
-
-CREATE INDEX ledger_entry_employee_history ON ledger_entry (employee_id, created_at);
 ```
 
 **Правила в коде (`LedgerService`):**

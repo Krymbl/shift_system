@@ -11,14 +11,10 @@ use App\Organization\Entity\EmployeeAssignment;
 use App\Shift\Enum\ShiftStatus;
 use Doctrine\ORM\Mapping as ORM;
 
+//shift_one_active_per_employee - в миграции
 #[ORM\Entity(repositoryClass: ShiftRepository::class)]
 #[ORM\Table(options: ['comment' => 'Смены'])]
 #[ORM\HasLifecycleCallbacks]
-#[ORM\UniqueConstraint(
-    name: 'shift_one_active_per_employee',
-    columns: ['employee_id'],
-    options: ['where' => "status IN ('requested', 'open')"],
-)]
 class Shift
 {
     use TimestampableTrait;
@@ -40,15 +36,27 @@ class Shift
 
     #[ORM\ManyToOne(targetEntity: EmployeeAssignment::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT', options: [
-        'comment' => 'Назначение, по которому идёт смена',
+        'comment' => 'ВК Назначение, по которому идёт смена',
     ])]
     private EmployeeAssignment $employeeAssignment;
 
     #[ORM\ManyToOne(targetEntity: Employee::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT', options: [
-        'comment' => 'Сотрудник. Денормализация: дублирует сотрудника из назначения, чтобы работал индекс одной активной смены на человека. Менять нельзя',
+        'comment' => 'ВК Сотрудник. Денормализация: дублирует сотрудника из назначения, чтобы работал индекс одной активной смены на человека. Менять нельзя',
     ])]
     private Employee $employee;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(onDelete: 'RESTRICT', options: [
+        'comment' => 'ВК Пользователь, подтвердивший или отклонивший заявку',
+    ])]
+    private ?User $decidedBy = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(onDelete: 'RESTRICT', options: [
+        'comment' => 'ВК Пользователь, закрывший смену',
+    ])]
+    private ?User $closedBy = null;
 
     #[ORM\Column(type: 'datetimetz_immutable', nullable: true, options: [
         'comment' => 'Момент открытия смены',
@@ -60,18 +68,6 @@ class Shift
         'comment' => 'Момент закрытия смены. Пусто, пока смена не закрыта',
     ])]
     private ?\DateTimeImmutable $closedAt = null;
-
-    #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(onDelete: 'RESTRICT', options: [
-        'comment' => 'Кто подтвердил или отклонил заявку',
-    ])]
-    private ?User $decidedBy = null;
-
-    #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(onDelete: 'RESTRICT', options: [
-        'comment' => 'Кто закрыл смену',
-    ])]
-    private ?User $closedBy = null;
 
     public function __construct(EmployeeAssignment $employeeAssignment)
     {

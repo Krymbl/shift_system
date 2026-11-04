@@ -23,7 +23,7 @@ class Department
     private string $name;
 
     #[ORM\ManyToOne(targetEntity: Location::class)]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT', options: ['comment' => 'ВК Точки'])]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT', options: ['comment' => 'ВК Точка'])]
     private Location $location;
 
     //department_closed_at_check

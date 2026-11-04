@@ -14,21 +14,17 @@ use App\Task\Enum\TaskStatus;
 use App\WorkOrder\Entity\WorkOrder;
 use Doctrine\ORM\Mapping as ORM;
 
+//task_active_by_location
 #[ORM\Entity(repositoryClass: TaskRepository::class)]
 #[ORM\Table(options: [
     'comment' => 'Задачи — единицы работы. Часть заказ-наряда или внутренняя',
 ])]
 #[ORM\HasLifecycleCallbacks]
-#[ORM\Index(
-    name: 'task_active_by_location',
-    columns: ['location_id', 'status'],
-    options: ['where' => "status IN ('new', 'assigned', 'in_progress', 'submitted')"],
-)]
 class Task
 {
     use TimestampableTrait;
 
-    #[ORM\Id, ORM\GeneratedValue, ORM\Column(type: 'integer', options: ['comment' => 'Первичный ключ'])]
+    #[ORM\Id, ORM\GeneratedValue, ORM\Column(type: 'integer')]
     private ?int $id = null;
 
     #[ORM\Column(type: 'string', length: 255, options: [
@@ -59,46 +55,46 @@ class Task
     ])]
     private ?int $clientPriceSnapshot = null;
 
-    #[ORM\Column(type: 'datetimetz_immutable', nullable: true, options: [
-        'comment' => 'Срок выполнения - дедлайн',
-    ])]
-    private ?\DateTimeImmutable $deadlineAt = null;
-
     #[ORM\ManyToOne(targetEntity: Location::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT', options: [
-        'comment' => 'Точка. Совпадает с точкой смены и заказ-наряда',
+        'comment' => 'ВК Точка. Совпадает с точкой смены и заказ-наряда',
     ])]
     private Location $location;
 
     #[ORM\ManyToOne(targetEntity: WorkOrder::class)]
     #[ORM\JoinColumn(onDelete: 'RESTRICT', options: [
-        'comment' => 'Заказ-наряд. Пусто у внутренней задачи без заказа',
+        'comment' => 'ВК Заказ-наряд. Пусто у внутренней задачи без заказа',
     ])]
     private ?WorkOrder $workOrder = null;
 
     #[ORM\ManyToOne(targetEntity: Shift::class)]
     #[ORM\JoinColumn(onDelete: 'RESTRICT', options: [
-        'comment' => 'Смена исполнителя',
+        'comment' => 'ВК Смена исполнителя. Пусто, пока задача в статусе new',
     ])]
     private ?Shift $shift = null;
 
     #[ORM\ManyToOne(targetEntity: ServiceType::class)]
     #[ORM\JoinColumn(onDelete: 'RESTRICT', options: [
-        'comment' => 'Услуга-шаблон, из которой взяты снимки цен и чек-лист',
+        'comment' => 'ВК Услуга-шаблон, из которой взяты снимки цен и чек-лист',
     ])]
     private ?ServiceType $serviceType = null;
 
     #[ORM\ManyToOne(targetEntity: Position::class)]
     #[ORM\JoinColumn(onDelete: 'RESTRICT', options: [
-        'comment' => 'Рекомендуемая должность, по умолчанию из услуги',
+        'comment' => 'ВК Рекомендуемая должность, по умолчанию из услуги',
     ])]
     private ?Position $requiredPosition = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT', options: [
-        'comment' => 'Кто создал задачу',
+        'comment' => 'ВК Пользователь, создавший задачу',
     ])]
     private User $createdBy;
+
+    #[ORM\Column(type: 'datetimetz_immutable', nullable: true, options: [
+        'comment' => 'Дедлайн выполнения',
+    ])]
+    private ?\DateTimeImmutable $deadlineAt = null;
 
     public function __construct(
         string $name,

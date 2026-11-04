@@ -12,19 +12,15 @@ use App\WorkOrder\Enum\PaymentMethod;
 use App\WorkOrder\Enum\WorkOrderStatus;
 use Doctrine\ORM\Mapping as ORM;
 
+//work_order_open_by_location
 #[ORM\Entity(repositoryClass: WorkOrderRepository::class)]
 #[ORM\Table(options: ['comment' => 'Заказ-наряды — визиты клиента'])]
 #[ORM\HasLifecycleCallbacks]
-#[ORM\Index(
-    name: 'work_order_open_by_location',
-    columns: ['location_id'],
-    options: ['where' => "status = 'open'"],
-)]
 class WorkOrder
 {
     use TimestampableTrait;
 
-    #[ORM\Id, ORM\GeneratedValue, ORM\Column(type: 'integer', options: ['comment' => 'Первичный ключ'])]
+    #[ORM\Id, ORM\GeneratedValue, ORM\Column(type: 'integer')]
     private ?int $id = null;
 
     //work_order_status_check, work_order_status_fields_check
@@ -48,40 +44,40 @@ class WorkOrder
 
     #[ORM\ManyToOne(targetEntity: Location::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT', options: [
-        'comment' => 'Точка, где принят заказ. Совпадает с точкой его задач',
+        'comment' => 'ВК Точка, где принят заказ. Совпадает с точкой его задач',
     ])]
     private Location $location;
 
     #[ORM\ManyToOne(targetEntity: Client::class)]
     #[ORM\JoinColumn(onDelete: 'RESTRICT', options: [
-        'comment' => 'Снимок владельца на момент визита',
+        'comment' => 'ВК Клиент — снимок владельца на момент визита',
     ])]
     private ?Client $client = null;
 
     // CHECK work_order_client_object_check — в миграции
     #[ORM\ManyToOne(targetEntity: WorkObject::class)]
     #[ORM\JoinColumn(onDelete: 'RESTRICT', options: [
-        'comment' => 'Объект работы',
+        'comment' => 'ВК Объект работы',
     ])]
     private ?WorkObject $workObject = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT', options: [
-        'comment' => 'Юзер, принявший заказ',
+        'comment' => 'ВК Пользователь, принявший заказ',
     ])]
     private User $createdBy;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(onDelete: 'RESTRICT', options: [
+        'comment' => 'ВК Пользователь, закрывший или отменивший заказ',
+    ])]
+    private ?User $closedBy = null;
 
     //work_order_closed_at_check
     #[ORM\Column(type: 'datetimetz_immutable', nullable: true, options: [
         'comment' => 'Момент закрытия или отмены',
     ])]
     private ?\DateTimeImmutable $closedAt = null;
-
-    #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(onDelete: 'RESTRICT', options: [
-        'comment' => 'Кто закрыл или отменил заказ',
-    ])]
-    private ?User $closedBy = null;
 
     //work_order_payment_pair_check, work_order_paid_at_check
     #[ORM\Column(type: 'datetimetz_immutable', nullable: true, options: [

@@ -7,14 +7,10 @@ namespace App\Organization\Entity;
 use App\Common\Traits\TimestampableTrait;
 use Doctrine\ORM\Mapping as ORM;
 
+//employee_assignment_active_uniq — частичный уникальный индекс, в миграции
 #[ORM\Entity(repositoryClass: EmployeeAssignmentRepository::class)]
 #[ORM\Table(options: ['comment' => 'Назначения сотрудника (должности на точках)'])]
 #[ORM\HasLifecycleCallbacks]
-#[ORM\UniqueConstraint(
-    name: 'employee_assignment_unique',
-    columns: ['employee_id', 'department_id', 'position_id'],
-    options: ['where' => '(ended_at IS NULL)'],
-)]
 class EmployeeAssignment
 {
     use TimestampableTrait;

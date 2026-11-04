@@ -10,7 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: ServiceChecklistItemRepository::class)]
 #[ORM\Table(options: ['comment' => 'Пункты шаблонного чек-листа услуги'])]
 #[ORM\HasLifecycleCallbacks]
-#[ORM\Index(name: 'service_checklist_item_position_by_service_type_idx', columns: ['service_type_id', 'position'])]
+#[ORM\Index(name: 'service_checklist_item_by_service_type_position', columns: ['service_type_id', 'position'])]
 class ServiceChecklistItem
 {
     use TimestampableTrait;
@@ -18,10 +18,11 @@ class ServiceChecklistItem
     #[ORM\Id, ORM\GeneratedValue, ORM\Column(type: 'integer')]
     private ?int $id = null;
 
+    //service_checklist_item_position_check
     #[ORM\Column(type: 'integer', options: ['comment' => 'Позиция в списке'])]
     private int $position;
 
-    #[ORM\Column(type: 'string', length: 255, options: ['comment' => 'Текст'])]
+    #[ORM\Column(type: 'string', length: 255, options: ['comment' => 'Текст пункта'])]
     private string $text;
 
     #[ORM\ManyToOne(targetEntity: ServiceType::class)]

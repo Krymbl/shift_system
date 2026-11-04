@@ -18,27 +18,26 @@ class ServiceType
     #[ORM\Id, ORM\GeneratedValue, ORM\Column(type: 'integer')]
     private ?int $id = null;
 
-    // UNIQUE INDEX по lower(name), в миграции
+    //service_type_name_lower_uniq
     #[ORM\Column(type: 'string', length: 255, options: ['comment' => 'Название, уникально без учёта регистра'])]
     private string $name;
 
     #[ORM\Column(type: 'text', nullable: true, options: ['comment' => 'Описание'])]
     private ?string $description = null;
 
-    //check > 0
+    //service_type_client_price_check
     #[ORM\Column(type: 'bigint', nullable: true, options: ['comment' => 'Цена для клиента в копейках'])]
     private ?int $clientPrice = null;
 
-    //check >= 0
+    //service_type_employee_pay_check
     #[ORM\Column(type: 'bigint', options: ['comment' => 'Оплата сотруднику в копейках'])]
     private int $employeePay;
 
-    //check > 0
+    //service_type_duration_minutes_check
     #[ORM\Column(type: 'integer', options: ['comment' => 'Время выполнения в минутах'])]
     private int $durationMinutes;
 
-    //CHECK (is_internal = true  AND client_price IS NULL)
-    // OR (is_internal = false AND client_price IS NOT NULL)
+    //service_type_internal_price_check
     #[ORM\Column(type: 'boolean', options: ['default' => false, 'comment' => "Флаг 'Внутренняя услуга'"])]
     private bool $isInternal;
 
@@ -46,7 +45,7 @@ class ServiceType
     #[ORM\JoinColumn(onDelete: 'RESTRICT', options: ['comment' => 'ВК Рекомендуемая должность'])]
     private ?Position $requiredPosition = null;
 
-    //CHECK (archived_at <= CURRENT_DATE)
+    //service_type_archived_at_check
     #[ORM\Column(type: 'date_immutable', nullable: true, options: ['comment' => 'Дата архивации'])]
     private ?\DateTimeImmutable $archivedAt = null;
 

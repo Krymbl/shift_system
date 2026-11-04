@@ -10,7 +10,6 @@ enum TaskStatus: string
     case ASSIGNED = 'assigned';
     case IN_PROGRESS = 'in_progress';
     case SUBMITTED = 'submitted';
-
     case ACCEPTED = 'accepted';
     case CANCELLED = 'cancelled';
 

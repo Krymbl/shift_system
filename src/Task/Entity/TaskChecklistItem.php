@@ -27,25 +27,26 @@ class TaskChecklistItem
     private string $text;
 
     #[ORM\ManyToOne(targetEntity: Task::class)]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE', options: ['comment' => 'ВК Задача'])]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE',
+        options: ['comment' => 'ВК Задача. Пункты живут только вместе с задачей'])]
     private Task $task;
-
-    //task_checklist_item_checked_pair_check
-    #[ORM\Column(type: 'datetimetz_immutable', nullable: true, options: ['comment' => 'Момент отметки'])]
-    private ?\DateTimeImmutable $checkedAt = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(onDelete: 'RESTRICT',
         options: ['comment' => 'ВК Пользователь, отметивший пункт'])]
     private ?User $checkedBy = null;
 
+    //task_checklist_item_checked_pair_check
+    #[ORM\Column(type: 'datetimetz_immutable', nullable: true, options: ['comment' => 'Момент отметки'])]
+    private ?\DateTimeImmutable $checkedAt = null;
+
     public function __construct(
-        string $text,
         int $position,
+        string $text,
         Task $task,
     ) {
-        $this->text = $text;
         $this->position = $position;
+        $this->text = $text;
         $this->task = $task;
     }
 
@@ -66,16 +67,6 @@ class TaskChecklistItem
         return $this->id;
     }
 
-    public function getText(): string
-    {
-        return $this->text;
-    }
-
-    public function setText(string $text): void
-    {
-        $this->text = $text;
-    }
-
     public function getPosition(): int
     {
         return $this->position;
@@ -84,6 +75,16 @@ class TaskChecklistItem
     public function setPosition(int $position): void
     {
         $this->position = $position;
+    }
+
+    public function getText(): string
+    {
+        return $this->text;
+    }
+
+    public function setText(string $text): void
+    {
+        $this->text = $text;
     }
 
     public function getTask(): Task

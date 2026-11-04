@@ -41,7 +41,7 @@ class TaskStatusChange
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(onDelete: 'RESTRICT',
-        options: ['comment' => 'ВК Пользователь, сделавший переход'])]
+        options: ['comment' => 'ВК Пользователь, сделавший переход. Пусто — переход выполнила система'])]
     private ?User $changedBy = null;
 
     #[ORM\Column(type: 'datetimetz_immutable', options: ['comment' => 'Дата создания'])]

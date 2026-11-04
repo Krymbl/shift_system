@@ -29,12 +29,12 @@ class Product
     private ?string $description = null;
 
     //product_price_check
-    #[ORM\Column(type: 'bigint', options: ['comment' => 'Цена копейки'])]
+    #[ORM\Column(type: 'bigint', options: ['comment' => 'Цена за единицу в копейках'])]
     private int $price;
 
     //product_unit_check
     #[ORM\Column(type: 'string', length: 10, enumType: ProductUnit::class,
-        options: ['comment' => 'Единица измерения (pcs, l, m, kg)'])]
+        options: ['comment' => 'Единица измерения: pcs, l, m, kg'])]
     private ProductUnit $unit;
 
     //product_archived_at_check

@@ -17,13 +17,13 @@ enum LedgerEntryType: string
     public function getTitle(): string
     {
         return match ($this) {
-            LedgerEntryType::SHIFT => 'Смена',
-            LedgerEntryType::TASK => 'Задача',
-            LedgerEntryType::BONUS => 'Бонус',
-            LedgerEntryType::PENALTY => 'Штраф',
-            LedgerEntryType::PAYOUT => 'Вычет',
-            LedgerEntryType::CORRECTION_PLUS => 'Корректировка положительная',
-            LedgerEntryType::CORRECTION_MINUS => 'Корректировка отрицательная',
+            self::SHIFT => 'Смена',
+            self::TASK => 'Задача',
+            self::BONUS => 'Бонус',
+            self::PENALTY => 'Штраф',
+            self::PAYOUT => 'Выплата',
+            self::CORRECTION_PLUS => 'Корректировка положительная',
+            self::CORRECTION_MINUS => 'Корректировка отрицательная',
         };
     }
 }

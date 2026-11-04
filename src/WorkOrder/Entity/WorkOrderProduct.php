@@ -12,7 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(options: ['comment' => 'Строки товаров заказ-наряда'])]
 #[ORM\HasLifecycleCallbacks]
 #[ORM\UniqueConstraint(
-    name: 'work_order_product_unique',
+    name: 'work_order_product_uniq',
     columns: ['work_order_id', 'product_id'],
 )]
 class WorkOrderProduct
@@ -33,12 +33,12 @@ class WorkOrderProduct
 
     #[ORM\ManyToOne(targetEntity: WorkOrder::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT', options: [
-        'comment' => 'Заказ-наряд. Менять и удалять строки можно только пока он открыт',
+        'comment' => 'ВК Заказ-наряд. Менять и удалять строки можно только пока он открыт',
     ])]
     private WorkOrder $workOrder;
 
     #[ORM\ManyToOne(targetEntity: Product::class)]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT', options: ['comment' => 'Товар из каталога'])]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT', options: ['comment' => 'ВК Товар из каталога'])]
     private Product $product;
 
     public function __construct(

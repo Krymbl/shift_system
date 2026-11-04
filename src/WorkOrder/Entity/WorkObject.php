@@ -8,14 +8,10 @@ use App\Common\Traits\TimestampableTrait;
 use App\Customer\Entity\Client;
 use Doctrine\ORM\Mapping as ORM;
 
+//work_object_identifier_active_uniq
 #[ORM\Entity(repositoryClass: WorkObjectRepository::class)]
 #[ORM\Table(options: ['comment' => 'Объект работы - объект клиента'])]
 #[ORM\HasLifecycleCallbacks]
-#[ORM\UniqueConstraint(
-    name: 'work_object_identifier_active',
-    columns: ['identifier'],
-    options: ['where' => '(archived_at IS NULL'],
-)]
 class WorkObject
 {
     use TimestampableTrait;
@@ -27,7 +23,7 @@ class WorkObject
         options: ['comment' => 'Дополнительный уникальный идентификатор'])]
     private ?string $identifier = null;
 
-    #[ORM\Column(type: 'json', options: ['jsonb' => true, 'default' => '{}', 'comment' => 'Атрибуты'])]
+    #[ORM\Column(type: 'json', options: ['jsonb' => true, 'default' => '{}', 'comment' => 'Постоянные данные объекта'])]
     private array $attributes = [];
 
     #[ORM\ManyToOne(targetEntity: Client::class)]

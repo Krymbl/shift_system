@@ -19,25 +19,18 @@ class LedgerEntry
     #[ORM\Id, ORM\GeneratedValue, ORM\Column(type: 'integer')]
     private ?int $id = null;
 
-    //CHECK (amount > 0)
+    //ledger_entry_amount_check
     #[ORM\Column(type: 'bigint', options: ['comment' => 'Сумма в копейках, положительная'])]
     private int $amount;
 
-    //CHECK (type IN ('shift', 'task', 'bonus', 'penalty', 'payout', 'correction_plus', 'correction_minus'))
-    //TABLE ledger_entry ADD CONSTRAINT ledger_entry_source_check CHECK (
-    //    (type = 'shift' AND shift_id IS NOT NULL AND task_id IS NULL)
-    // OR (type = 'task'  AND task_id  IS NOT NULL AND shift_id IS NULL)
-    // OR (type IN ('bonus', 'penalty', 'payout', 'correction_plus', 'correction_minus')
-    //     AND shift_id IS NULL AND task_id IS NULL)
-    //);
+    //ledger_entry_type_check, ledger_entry_source_check
     #[ORM\Column(type: 'string', length: 20, enumType: LedgerEntryType::class,
         options: ['comment' => 'Тип: shift (почасовая), task (за задачу), bonus, penalty, payout (выплата), correction_plus, correction_minus'])]
     private LedgerEntryType $type;
 
-    //ALTER TABLE ledger_entry ADD CONSTRAINT ledger_entry_comment_check CHECK (
-    //    type IN ('shift', 'task') OR (comment IS NOT NULL AND btrim(comment) <> '')
-    //);
-    #[ORM\Column(type: 'text', nullable: true, options: ['comment' => 'Комментарий к записи'])]
+    //ledger_entry_comment_check
+    #[ORM\Column(type: 'text', nullable: true,
+        options: ['comment' => 'Комментарий к записи. Обязательно для всех типов, кроме shift и task'])]
     private ?string $comment = null;
 
     #[ORM\ManyToOne(targetEntity: Employee::class)]
@@ -55,9 +48,7 @@ class LedgerEntry
         options: ['comment' => 'ВК Задача — источник оплаты за работу. Одна задача даёт не более одной записи'])]
     private ?Task $task = null;
 
-    //ALTER TABLE ledger_entry ADD CONSTRAINT ledger_entry_correction_check CHECK (
-    //    corrected_entry_id IS NULL
-    // OR (type IN ('correction_plus', 'correction_minus') AND corrected_entry_id <> id)
+    //ledger_entry_correction_check
     #[ORM\ManyToOne(targetEntity: LedgerEntry::class)]
     #[ORM\JoinColumn(onDelete: 'RESTRICT',
         options: ['comment' => 'ВК Исправляемая запись. Заполняется только у корректировок'])]

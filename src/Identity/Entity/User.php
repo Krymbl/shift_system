@@ -49,7 +49,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     //users_gender_check
     #[ORM\Column(type: 'string', length: 1, nullable: true, enumType: Gender::class,
-        options: ['comment' => 'Пол, m или f'])]
+        options: ['comment' => 'Пол: m или f'])]
     private ?Gender $gender = null;
 
     #[ORM\Column(type: 'datetimetz_immutable', nullable: true, options: ['comment' => 'Дата и время деактивации'])]
