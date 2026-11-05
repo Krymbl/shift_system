@@ -6,6 +6,7 @@ namespace App\WorkOrder\Entity;
 
 use App\Catalog\Entity\Product;
 use App\Common\Traits\TimestampableTrait;
+use App\WorkOrder\Repository\WorkOrderProductRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: WorkOrderProductRepository::class)]

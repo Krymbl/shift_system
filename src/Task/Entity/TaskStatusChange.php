@@ -7,6 +7,7 @@ namespace App\Task\Entity;
 use App\Identity\Entity\User;
 use App\Shift\Entity\Shift;
 use App\Task\Enum\TaskStatus;
+use App\Task\Repository\TaskStatusChangeRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: TaskStatusChangeRepository::class)]

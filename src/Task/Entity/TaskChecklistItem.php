@@ -6,6 +6,7 @@ namespace App\Task\Entity;
 
 use App\Common\Traits\TimestampableTrait;
 use App\Identity\Entity\User;
+use App\Task\Repository\TaskChecklistItemRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: TaskChecklistItemRepository::class)]

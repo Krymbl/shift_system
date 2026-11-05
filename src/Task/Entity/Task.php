@@ -11,6 +11,7 @@ use App\Organization\Entity\Location;
 use App\Organization\Entity\Position;
 use App\Shift\Entity\Shift;
 use App\Task\Enum\TaskStatus;
+use App\Task\Repository\TaskRepository;
 use App\WorkOrder\Entity\WorkOrder;
 use Doctrine\ORM\Mapping as ORM;
 

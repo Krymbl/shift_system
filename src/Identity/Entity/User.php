@@ -6,6 +6,7 @@ namespace App\Identity\Entity;
 
 use App\Common\Traits\TimestampableTrait;
 use App\Identity\Enum\Gender;
+use App\Identity\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;

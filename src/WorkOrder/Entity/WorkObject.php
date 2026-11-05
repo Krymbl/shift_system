@@ -6,6 +6,7 @@ namespace App\WorkOrder\Entity;
 
 use App\Common\Traits\TimestampableTrait;
 use App\Customer\Entity\Client;
+use App\WorkOrder\Repository\WorkObjectRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 //work_object_identifier_active_uniq

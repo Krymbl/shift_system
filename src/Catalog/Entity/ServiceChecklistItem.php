@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Catalog\Entity;
 
+use App\Catalog\Repository\ServiceChecklistItemRepository;
 use App\Common\Traits\TimestampableTrait;
 use Doctrine\ORM\Mapping as ORM;
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Organization\Entity;
 
 use App\Common\Traits\TimestampableTrait;
+use App\Organization\Repository\EmployeeAssignmentRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 //employee_assignment_active_uniq — частичный уникальный индекс, в миграции

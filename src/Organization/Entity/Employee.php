@@ -6,6 +6,7 @@ namespace App\Organization\Entity;
 
 use App\Common\Traits\TimestampableTrait;
 use App\Identity\Entity\User;
+use App\Organization\Repository\EmployeeRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: EmployeeRepository::class)]

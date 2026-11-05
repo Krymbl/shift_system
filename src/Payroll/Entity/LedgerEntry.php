@@ -7,6 +7,7 @@ namespace App\Payroll\Entity;
 use App\Identity\Entity\User;
 use App\Organization\Entity\Employee;
 use App\Payroll\Enum\LedgerEntryType;
+use App\Payroll\Repository\LedgerEntryRepository;
 use App\Shift\Entity\Shift;
 use App\Task\Entity\Task;
 use Doctrine\ORM\Mapping as ORM;

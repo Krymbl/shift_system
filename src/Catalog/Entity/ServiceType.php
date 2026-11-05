@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Catalog\Entity;
 
+use App\Catalog\Repository\ServiceTypeRepository;
 use App\Common\Traits\TimestampableTrait;
 use App\Organization\Entity\Position;
 use Doctrine\ORM\Mapping as ORM;

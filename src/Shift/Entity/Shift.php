@@ -9,6 +9,7 @@ use App\Identity\Entity\User;
 use App\Organization\Entity\Employee;
 use App\Organization\Entity\EmployeeAssignment;
 use App\Shift\Enum\ShiftStatus;
+use App\Shift\Repository\ShiftRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 //shift_one_active_per_employee - в миграции

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Customer\Entity;
 
 use App\Common\Traits\TimestampableTrait;
+use App\Customer\Repository\ClientRepository;
 use App\Identity\Entity\User;
 use Doctrine\ORM\Mapping as ORM;
 

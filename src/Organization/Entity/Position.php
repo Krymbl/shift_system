@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Organization\Entity;
 
 use App\Common\Traits\TimestampableTrait;
+use App\Organization\Repository\PositionRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PositionRepository::class)]

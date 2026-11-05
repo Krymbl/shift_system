@@ -10,6 +10,7 @@ use App\Identity\Entity\User;
 use App\Organization\Entity\Location;
 use App\WorkOrder\Enum\PaymentMethod;
 use App\WorkOrder\Enum\WorkOrderStatus;
+use App\WorkOrder\Repository\WorkOrderRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 //work_order_open_by_location
