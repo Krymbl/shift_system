@@ -11,8 +11,11 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
+//TODO консольная команда для создания супер-админа
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users', options: ['comment' => 'Пользователи'])]
+#[ORM\UniqueConstraint(name: 'users_email_unique', columns: ['email'])]
+#[ORM\UniqueConstraint(name: 'users_phone_unique', columns: ['phone'])]
 #[ORM\HasLifecycleCallbacks]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
@@ -22,11 +25,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     //users_email_lower_check
-    #[ORM\Column(type: 'string', length: 255, unique: true,
+    #[ORM\Column(type: 'string', length: 255,
         options: ['comment' => 'Почта - логин. Уникальная, хранится в нижнем регистре'])]
     private string $email;
 
-    #[ORM\Column(type: 'string', length: 30, unique: true,
+    #[ORM\Column(type: 'string', length: 30,
         options: ['comment' => 'Телефон в едином формате, уникальный'])]
     private string $phone;
 
@@ -67,7 +70,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         ?Gender $gender = null,
     ) {
         $this->setEmail($email);
-        $this->phone = $phone;
+        $this->setPhone($phone);
         $this->password = $password;
         $this->firstName = $firstName;
         $this->lastName = $lastName;

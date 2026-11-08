@@ -5,7 +5,9 @@ security:
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        users_in_memory: { memory: null }
+        app_user_provider:
+            entity:
+                class: App\Identity\Entity\User
 
     firewalls:
         dev:
@@ -14,7 +16,18 @@ security:
             security: false
         main:
             lazy: true
-            provider: users_in_memory
+            provider: app_user_provider
+
+            form_login:
+                login_path: login
+                check_path: login
+                default_target_path: ХЗ
+                enable_csrf: true
+
+            logout:
+                path: logout
+                target: login
+                enable_csrf: true
 
             # Activate different ways to authenticate:
             # https://symfony.com/doc/current/security.html#the-firewall
@@ -24,8 +37,11 @@ security:
 
     # Note: Only the *first* matching rule is applied
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/logout, roles: PUBLIC_ACCESS }
+        - { path: ^/register, roles: PUBLIC_ACCESS }
+        #TODO в конец прописать точные правила по ресурсам, пока доступно всем
+        - { path: ^/, roles: ROLE_USER }
 
 when@test:
     security:

@@ -21,7 +21,7 @@ final class IgnoredIndexesSchemaManager extends PostgreSQLSchemaManager
     ];
 
     /**
-     * Защищённый метод DBAL, который надо проверить при обновлении
+     * Защищённый метод DBAL
      */
     protected function _getPortableTableIndexesList(array $rows, string $tableName): array
     {
