@@ -12,10 +12,10 @@ final class UserHasRelatedDataException extends AbstractBusinessException
     protected const int STATUS_CODE = Response::HTTP_CONFLICT;
 
     public function __construct(
-        int         $userId,
+        int $userId,
         ?\Throwable $previous = null
     ) {
-        parent::__construct("У пользователя id: $userId есть данные, его можно только деактивировать", $previous);
+        parent::__construct("пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ id: $userId пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ", $previous);
     }
 
 }

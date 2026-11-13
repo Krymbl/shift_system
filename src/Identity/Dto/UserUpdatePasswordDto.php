@@ -4,18 +4,19 @@ declare(strict_types=1);
 namespace App\Identity\Dto;
 
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Security\Core\Validator\Constraints\UserPassword;
 
 final class UserUpdatePasswordDto {
-    #[Assert\NotBlank(message: 'Введите текущий пароль')]
-    #[Assert\UserPassword(message: 'Текущий пароль неверный')]
+    #[Assert\NotBlank(message: 'Р’РІРµРґРёС‚Рµ С‚РµРєСѓС‰РёР№ РїР°СЂРѕР»СЊ')]
+    #[UserPassword(message: 'РўРµРєСѓС‰РёР№ РїР°СЂРѕР»СЊ РЅРµРІРµСЂРЅС‹Р№')]
     public ?string $currentPassword = null;
 
-    #[Assert\NotBlank(message: 'Пароль обязателен')]
+    #[Assert\NotBlank(message: 'РџР°СЂРѕР»СЊ РѕР±СЏР·Р°С‚РµР»РµРЅ')]
     #[Assert\Length(
         min: 8,
         max: 100,
-        minMessage: 'Пароль должен содержать минимум {{ limit }} символов',
-        maxMessage: 'Пароль должен содержать не больше {{ limit }} символов',
+        minMessage: 'РџР°СЂРѕР»СЊ РґРѕР»Р¶РµРЅ СЃРѕРґРµСЂР¶Р°С‚СЊ РјРёРЅРёРјСѓРј {{ limit }} СЃРёРјРІРѕР»РѕРІ',
+        maxMessage: 'РџР°СЂРѕР»СЊ РґРѕР»Р¶РµРЅ СЃРѕРґРµСЂР¶Р°С‚СЊ РЅРµ Р±РѕР»СЊС€Рµ {{ limit }} СЃРёРјРІРѕР»РѕРІ',
     )]
     public ?string $newPassword = null;
 }

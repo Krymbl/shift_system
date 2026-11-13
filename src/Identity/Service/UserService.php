@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Identity\Service;
 
-use App\Common\Exception\AbstractBusinessException;
 use App\Identity\Dto\UserSaveDto;
+use App\Identity\Dto\UserUpdateEmailDto;
+use App\Identity\Dto\UserUpdatePasswordDto;
 use App\Identity\Entity\User;
 use App\Identity\Exception\EmailAlreadyTakenException;
 use App\Identity\Exception\PhoneAlreadyTakenException;
-use App\Identity\Exception\UserChangeActiveStatusException;
+use App\Identity\Exception\UserAlreadyActiveException;
+use App\Identity\Exception\UserAlreadyDeactivatedException;
 use App\Identity\Exception\UserHasRelatedDataException;
+use App\Identity\Exception\UserNotFoundException;
 use App\Identity\Repository\UserRepository;
 use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -26,8 +29,15 @@ final readonly class UserService
     {
     }
 
+    private const array UNIQUE_EXCEPTIONS = [
+        'users_email_unique' => EmailAlreadyTakenException::class,
+        'users_phone_unique' => PhoneAlreadyTakenException::class,
+    ];
+
     /**
-     * @throws EmailAlreadyTakenException|PhoneAlreadyTakenException|UniqueConstraintViolationException
+     * @throws EmailAlreadyTakenException
+     * @throws PhoneAlreadyTakenException
+     * @throws UniqueConstraintViolationException
      */
     //TODO передавать роль при создании
     public function create(UserSaveDto $dto): User
@@ -48,12 +58,17 @@ final readonly class UserService
         try {
             $this->userRepository->save($user, false);
         } catch (UniqueConstraintViolationException $e) {
-            throw $this->mapUniqueViolation($e, $dto);
+            throw $this->mapUniqueViolation($e);
         }
 
         return $user;
     }
 
+    /**
+     * @throws EmailAlreadyTakenException
+     * @throws PhoneAlreadyTakenException
+     * @throws UniqueConstraintViolationException
+     */
     public function update(User $user, UserSaveDto $dto): void
     {
        $user->setPhone($dto->phone);
@@ -64,41 +79,56 @@ final readonly class UserService
        $user->setGender($dto->gender);
 
         try {
-            $this->userRepository->save($user, false);
+            $this->userRepository->save($user);
         } catch (UniqueConstraintViolationException $e) {
-            throw $this->mapUniqueViolation($e, $dto);
+            throw $this->mapUniqueViolation($e);
         }
     }
 
-    public function updateEmail(User $user): void
+    /**
+     * @throws EmailAlreadyTakenException
+     * @throws PhoneAlreadyTakenException
+     * @throws UniqueConstraintViolationException
+     */
+    public function updateEmail(User $user, UserUpdateEmailDto $emailDto): void
     {
+        $email = $emailDto->email;
+
+        $user->setEmail($email);
+        try {
+            $this->userRepository->save($user);
+        } catch (UniqueConstraintViolationException $e) {
+            throw $this->mapUniqueViolation($e);
+        }
         //todo после смены идентификатора надо в контроллере обратно сразу залогинить юзера $security->login($user);
     }
 
-    public function updatePassword(User $user): void
+    public function updatePassword(User $user, UserUpdatePasswordDto $passwordDto): void
     {
-
+        $user->setPassword($this->passwordHasher->hashPassword($user, $passwordDto->newPassword));
+        $this->userRepository->save($user);
+        //todo после смены идентификатора надо в контроллере обратно сразу залогинить юзера $security->login($user);
     }
 
     /**
-     * @throws UserChangeActiveStatusException
+     * @throws UserAlreadyDeactivatedException
      */
     public function deactivate(User $user): void
     {
         if (!$user->isActive()) {
-            throw new UserChangeActiveStatusException(false);
+            throw new UserAlreadyDeactivatedException();
         }
         $user->setDeactivatedAt(new \DateTimeImmutable());
         $this->userRepository->save($user);
     }
 
     /**
-     * @throws UserChangeActiveStatusException
+     * @throws UserAlreadyActiveException
      */
     public function activate(User $user): void
     {
         if ($user->isActive()) {
-            throw new UserChangeActiveStatusException(true);
+            throw new UserAlreadyActiveException();
         }
         $user->setDeactivatedAt(null);
         $this->userRepository->save($user);
@@ -117,9 +147,18 @@ final readonly class UserService
         }
     }
 
-    public function getById(string $id): ?User
+    /**
+     * @throws UserNotFoundException
+     */
+    public function getById(int $id): User
     {
-       return $this->userRepository->find($id);
+       $user = $this->userRepository->find($id);
+
+       if ($user === null) {
+           throw new UserNotFoundException($id);
+       }
+
+       return $user;
     }
 
     private function generatePassword(int $length = 12): string
@@ -135,17 +174,21 @@ final readonly class UserService
         return $password;
     }
 
+    //todo сделать метод публичным, как-то надо обращатсья к созданию пользователя при flush снаружи
     /**
      * @throws UniqueConstraintViolationException
      */
-    private function mapUniqueViolation(UniqueConstraintViolationException $e, UserSaveDto $dto): AbstractBusinessException
+    private function mapUniqueViolation(UniqueConstraintViolationException $e): EmailAlreadyTakenException|PhoneAlreadyTakenException
     {
-        $message = $e->getMessage();
+        /**
+         * @var class-string<EmailAlreadyTakenException|PhoneAlreadyTakenException> $exceptionClass
+         */
+        foreach (self::UNIQUE_EXCEPTIONS as $indexName => $exceptionClass) {
+            if (str_contains($e->getMessage(), $indexName)) {
+                return new $exceptionClass($e);
+            }
+        }
 
-        return match (true) {
-            str_contains($message, 'users_email_unique') => new EmailAlreadyTakenException($dto->email, $e),
-            str_contains($message, 'users_phone_unique') => new PhoneAlreadyTakenException($dto->phone, $e),
-            default => throw $e,
-        };
+        throw $e;
     }
 }

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Identity\Dto;
 
+use App\Common\Util\PhoneNormalizer;
 use App\Identity\Entity\User;
 use App\Identity\Enum\Gender;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
-//TODO нормализация phone и email до dto
 #[UniqueEntity(
     fields: ['email'],
     message: 'Пользователь с такой почтой уже существует',
@@ -28,24 +28,23 @@ final class UserSaveDto
 {
     public ?int $id = null;
 
-//    #[Assert\NotBlank(message: 'Пароль обязателен', groups: ['create'])]
-//    #[Assert\Length(
-//        min: 8,
-//        max: 100,
-//        minMessage: 'Пароль должен содержать минимум {{ limit }} символов',
-//        maxMessage: 'Пароль должен содержать не больше {{ limit }} символов',
-//        groups: ['create']
-//    )]
-//    public ?string $plainPassword = null;
+    #[Assert\NotBlank(message: 'Почта обязательна', groups: ['create'])]
+    #[Assert\Email(message: 'Введите почту в правильном формате: example@gmail.com', groups: ['create'])]
+    #[Assert\Length(
+        max: 255,
+        maxMessage: 'Почта должна содержать не больше {{ limit }} символов',
+        groups: ['create']
+    )]
+    public ?string $email = null {
+        set => mb_strtolower(trim($value));
+    }
 
     #[Assert\NotBlank(message: 'Телефон обязателен')]
-    #[Assert\Length(
-        min: 3,
-        max: 30,
-        minMessage: 'Телефон должен содержать минимум {{ limit }} символов',
-        maxMessage: 'Телефон должен содержать не больше {{ limit }} символов',
-    )]
-    public ?string $phone = null;
+    #[Assert\Regex(pattern: '/^\+\d{11,15}$/',
+        message: 'Проверьте номер телефона, например +7 900 255-45-36 или 8 900 255-45-36')]
+    public ?string $phone = null {
+        set => PhoneNormalizer::normalize($value);
+    }
 
     #[Assert\NotBlank(message: 'Фамилия обязательна')]
     #[Assert\Length(

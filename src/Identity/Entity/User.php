@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Identity\Entity;
 
 use App\Common\Traits\TimestampableTrait;
+use App\Common\Util\PhoneNormalizer;
 use App\Identity\Enum\Gender;
 use App\Identity\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -12,6 +13,7 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 //TODO консольная команда для создания супер-админа
+//TODO сделать номер телефона - идентификатором?
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users', options: ['comment' => 'Пользователи'])]
 #[ORM\UniqueConstraint(name: 'users_email_unique', columns: ['email'])]
@@ -99,10 +101,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->phone;
     }
 
-    //TODO нормализатор телефона
     public function setPhone(string $phone): void
     {
-        $this->phone = $phone;
+        $this->phone = PhoneNormalizer::normalize($phone);
     }
 
     public function getPassword(): string

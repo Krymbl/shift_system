@@ -12,10 +12,9 @@ final class EmailAlreadyTakenException extends AbstractBusinessException
     protected const int STATUS_CODE = Response::HTTP_CONFLICT;
 
     public function __construct(
-        string $email,
         ?\Throwable $previous = null
     )
     {
-        parent::__construct("Пользователь с почтой $email уже существует", $previous);
+        parent::__construct('Пользователь с такой почтой уже существует', $previous);
     }
 }

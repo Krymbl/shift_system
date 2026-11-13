@@ -6,21 +6,33 @@ namespace App\Identity\Dto;
 use App\Identity\Entity\User;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Security\Core\Validator\Constraints\UserPassword;
 
 #[UniqueEntity(
     fields: ['email'],
-    message: 'œÓÎ¸ÁÓ‚‡ÚÂÎ¸ Ò Ú‡ÍÓÈ ÔÓ˜ÚÓÈ ÛÊÂ ÒÛ˘ÂÒÚ‚ÛÂÚ',
+    message: '–ü–æ–ª—å–∑–æ–≤–∞—Ç–µ–ª—å —Å —Ç–∞–∫–æ–π –ø–æ—á—Ç–æ–π —É–∂–µ —Å—É—â–µ—Å—Ç–≤—É–µ—Ç',
     entityClass: User::class,
     errorPath: 'email',
     identifierFieldNames: ['id'],
 )]
 final class UserUpdateEmailDto {
 
-    #[Assert\NotBlank(message: 'œÓ˜Ú‡ Ó·ˇÁ‡ÚÂÎ¸Ì‡', groups: ['create'])]
-    #[Assert\Email(message: '¬‚Â‰ËÚÂ ÔÓ˜ÚÛ ‚ Ô‡‚ËÎ¸ÌÓÏ ÙÓÏ‡ÚÂ: example@gmail.com')]
+    /**
+     * –ê–π–¥–∏ –ø–æ–ª—å–∑–∞–∫–∞
+     */
+    public ?int $id = null;
+
+    #[Assert\NotBlank(message: '–ü–æ—á—Ç–∞ –æ–±—è–∑–∞—Ç–µ–ª—å–Ω–∞')]
+    #[Assert\Email(message: '–í–≤–µ–¥–∏—Ç–µ –ø–æ—á—Ç—É –≤ –ø—Ä–∞–≤–∏–ª—å–Ω–æ–º —Ñ–æ—Ä–º–∞—Ç–µ: example@gmail.com')]
     #[Assert\Length(
         max: 255,
-        maxMessage: 'œÓ˜Ú‡ ‰ÓÎÊÌ‡ ÒÓ‰ÂÊ‡Ú¸ ÌÂ ·ÓÎ¸¯Â {{ limit }} ÒËÏ‚ÓÎÓ‚',
+        maxMessage: '–ü–æ—á—Ç–∞ –¥–æ–ª–∂–Ω–∞ —Å–æ–¥–µ—Ä–∂–∞—Ç—å –Ω–µ –±–æ–ª—å—à–µ {{ limit }} —Å–∏–º–≤–æ–ª–æ–≤',
     )]
-    public ?string $email = null;
+    public ?string $email = null {
+        set => mb_strtolower(trim($value));
+    }
+
+    #[Assert\NotBlank(message: '–í–≤–µ–¥–∏—Ç–µ —Ç–µ–∫—É—â–∏–π –ø–∞—Ä–æ–ª—å')]
+    #[UserPassword(message: '–¢–µ–∫—É—â–∏–π –ø–∞—Ä–æ–ª—å –Ω–µ–≤–µ—Ä–Ω—ã–π')]
+    public ?string $currentPassword = null;
 }

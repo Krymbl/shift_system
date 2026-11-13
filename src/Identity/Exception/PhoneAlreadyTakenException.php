@@ -12,10 +12,9 @@ final class PhoneAlreadyTakenException extends AbstractBusinessException
     protected const int STATUS_CODE = Response::HTTP_CONFLICT;
 
     public function __construct(
-        string $phone,
         ?\Throwable $previous = null
     )
     {
-        parent::__construct("Пользователь с номером $phone уже существует", $previous);
+        parent::__construct('Пользователь с таким номером уже существует', $previous);
     }
 }
