@@ -24,18 +24,9 @@ use Symfony\Component\Validator\Constraints as Assert;
     errorPath: 'phone',
     identifierFieldNames: ['id'],
 )]
-class UserSaveDto
+final class UserSaveDto
 {
     public ?int $id = null;
-
-    #[Assert\NotBlank(message: 'Почта обязательна', groups: ['create'])]
-    #[Assert\Email(message: 'Введите почту в правильном формате: example@gmail.com', groups: ['create'])]
-    #[Assert\Length(
-        max: 255,
-        maxMessage: 'Почта должна содержать не больше {{ limit }} символов',
-        groups: ['create']
-    )]
-    public ?string $email = null;
 
 //    #[Assert\NotBlank(message: 'Пароль обязателен', groups: ['create'])]
 //    #[Assert\Length(

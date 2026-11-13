@@ -16,6 +16,6 @@ final class PhoneAlreadyTakenException extends AbstractBusinessException
         ?\Throwable $previous = null
     )
     {
-        parent::__construct(sprintf('Пользователь с номером %s уже существует', $phone), $previous);
+        parent::__construct("Пользователь с номером $phone уже существует", $previous);
     }
 }

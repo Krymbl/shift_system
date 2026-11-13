@@ -80,6 +80,6 @@ final class AuthController extends AbstractController
     #[Route(path: '/logout', name: 'logout', methods: ['POST'])]
     public function logout(): never
     {
-        throw new \LogicException('Перехватывается и не выполняется.');
+        throw new \LogicException('Перехватывается и не выполняется');
     }
 }

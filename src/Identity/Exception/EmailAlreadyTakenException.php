@@ -16,6 +16,6 @@ final class EmailAlreadyTakenException extends AbstractBusinessException
         ?\Throwable $previous = null
     )
     {
-        parent::__construct(sprintf('Пользователь с почтой %s уже существует', $email), $previous);
+        parent::__construct("Пользователь с почтой $email уже существует", $previous);
     }
 }
