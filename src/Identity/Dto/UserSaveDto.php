@@ -70,4 +70,17 @@ final class UserSaveDto
 
     public ?Gender $gender = null;
 
+    public static function fromUser(User $user): self
+    {
+        $self = new self();
+
+        $self->id = $user->getId();
+        $self->email = $user->getEmail();
+        $self->firstName = $user->getFirstName();
+        $self->lastName = $user->getLastName();
+        $self->patronymic = $user->getPatronymic();
+        $self->birthday = $user->getBirthday();
+        $self->gender = $user->getGender();
+        return $self;
+    }
 }

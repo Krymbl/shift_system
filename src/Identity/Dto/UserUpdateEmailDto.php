@@ -35,4 +35,12 @@ final class UserUpdateEmailDto {
     #[Assert\NotBlank(message: 'Введите текущий пароль')]
     #[UserPassword(message: 'Текущий пароль неверный')]
     public ?string $currentPassword = null;
+
+    public static function fromUser(User $user): self
+    {
+        $self = new self();
+        $self->id = $user->getId();
+        $self->email = $user->getEmail();
+        return $self;
+    }
 }

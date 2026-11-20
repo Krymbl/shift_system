@@ -65,7 +65,6 @@ final readonly class UserService
     }
 
     /**
-     * @throws EmailAlreadyTakenException
      * @throws PhoneAlreadyTakenException
      * @throws UniqueConstraintViolationException
      */
@@ -87,7 +86,6 @@ final readonly class UserService
 
     /**
      * @throws EmailAlreadyTakenException
-     * @throws PhoneAlreadyTakenException
      * @throws UniqueConstraintViolationException
      */
     public function updateEmail(User $user, UserUpdateEmailDto $emailDto): void
