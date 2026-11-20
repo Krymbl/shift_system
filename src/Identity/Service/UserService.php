@@ -39,7 +39,7 @@ final readonly class UserService
      * @throws PhoneAlreadyTakenException
      * @throws UniqueConstraintViolationException
      */
-    //TODO передавать роль при создании
+    //TODO передавать роль при создании в userDto прокинуть роль?
     public function create(UserSaveDto $dto): User
     {
         $user = new User(
