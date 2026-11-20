@@ -7,11 +7,13 @@ namespace App\Identity\Controller;
 use App\Identity\Dto\UserDto;
 use App\Identity\Dto\UserSaveDto;
 use App\Identity\Dto\UserUpdateEmailDto;
+use App\Identity\Dto\UserUpdatePasswordDto;
 use App\Identity\Entity\User;
 use App\Identity\Exception\EmailAlreadyTakenException;
 use App\Identity\Exception\PhoneAlreadyTakenException;
 use App\Identity\Form\UserSaveType;
 use App\Identity\Form\UserUpdateEmailType;
+use App\Identity\Form\UserUpdatePasswordType;
 use App\Identity\Service\UserService;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,12 +23,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
-#[Route(path: '/profile', name: 'profile', methods: ['GET', 'POST'])]
+#[Route(path: '/profile', name: 'profile_', methods: ['GET', 'POST'])]
 final class ProfileController extends AbstractController
 {
 
     public function __construct(
-        private UserService $userService
+        private readonly UserService $userService
     ) {
     }
 
@@ -66,11 +68,30 @@ final class ProfileController extends AbstractController
         ]);
     }
 
+    #[Route(path: '/', name: 'password_change', methods: ['GET', 'POST'])]
+    public function passwordChange(#[CurrentUser] User $user, Request $request): Response
+    {
+        $dto = new UserUpdatePasswordDto();
+        $form = $this->createForm(UserUpdatePasswordType::class, $dto);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->userService->updatePassword($user, $dto);
+            $this->addFlash('success', 'Пароль успешно обновлен');
+
+            return $this->redirectToRoute('profile_index');
+        }
+
+        return $this->render('identity/user/ХЗ', [
+            'form' => $form,
+        ]);
+    }
+
     /**
      * @throws UniqueConstraintViolationException
      */
-    #[Route(path: '/', name: 'profile', methods: ['GET', 'POST'])]
-    public function passwordChange(#[CurrentUser] User $user, Request $request): Response
+    #[Route(path: '/', name: 'email_change', methods: ['GET', 'POST'])]
+    public function emailChange(#[CurrentUser] User $user, Request $request): Response
     {
         $dto = UserUpdateEmailDto::fromUser($user);
         $form = $this->createForm(UserUpdateEmailType::class, $dto);
@@ -87,12 +108,8 @@ final class ProfileController extends AbstractController
             }
         }
 
-        return $this->render('identity/user/profile/edit.html.twig', [
+        return $this->render('identity/user/ХЗ', [
             'form' => $form,
         ]);
-    }
-
-    public function emailChange(): Response
-    {
     }
 }
