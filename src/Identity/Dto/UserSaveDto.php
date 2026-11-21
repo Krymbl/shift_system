@@ -76,6 +76,7 @@ final class UserSaveDto
 
         $self->id = $user->getId();
         $self->email = $user->getEmail();
+        $self->phone = $user->getPhone();
         $self->firstName = $user->getFirstName();
         $self->lastName = $user->getLastName();
         $self->patronymic = $user->getPatronymic();

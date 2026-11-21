@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Identity\Form;
 
-use App\Identity\Dto\UserSaveDto;
 use App\Identity\Dto\UserUpdateEmailDto;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class UserUpdateEmailType extends AbstractType
@@ -22,6 +21,13 @@ final class UserUpdateEmailType extends AbstractType
                 'attr' => [
                     'class' => 'email-input',
                     'placeholder' => 'example@gmail.com',
+                ],
+            ])
+            ->add('currentPassword', PasswordType::class, [
+                'label' => 'Текущий пароль',
+                'attr' => [
+                    'class' => 'current-password-input',
+                    'placeholder' => 'Пароль',
                 ],
             ]);
     }

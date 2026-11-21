@@ -17,6 +17,7 @@ use App\Identity\Form\UserUpdatePasswordType;
 use App\Identity\Service\UserService;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,7 +29,8 @@ final class ProfileController extends AbstractController
 {
 
     public function __construct(
-        private readonly UserService $userService
+        private readonly UserService $userService,
+        private readonly Security $security,
     ) {
     }
 
@@ -68,7 +70,7 @@ final class ProfileController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/', name: 'password_change', methods: ['GET', 'POST'])]
+    #[Route(path: '/password', name: 'password_change', methods: ['GET', 'POST'])]
     public function passwordChange(#[CurrentUser] User $user, Request $request): Response
     {
         $dto = new UserUpdatePasswordDto();
@@ -77,8 +79,9 @@ final class ProfileController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->userService->updatePassword($user, $dto);
-            $this->addFlash('success', 'Пароль успешно обновлен');
+            $this->security->login($user);
 
+            $this->addFlash('success', 'Пароль успешно обновлен');
             return $this->redirectToRoute('profile_index');
         }
 
@@ -90,7 +93,7 @@ final class ProfileController extends AbstractController
     /**
      * @throws UniqueConstraintViolationException
      */
-    #[Route(path: '/', name: 'email_change', methods: ['GET', 'POST'])]
+    #[Route(path: '/email', name: 'email_change', methods: ['GET', 'POST'])]
     public function emailChange(#[CurrentUser] User $user, Request $request): Response
     {
         $dto = UserUpdateEmailDto::fromUser($user);
@@ -100,8 +103,9 @@ final class ProfileController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             try {
                 $this->userService->updateEmail($user, $dto);
-                $this->addFlash('success', 'Почта успешно обновлена');
+                $this->security->login($user);
 
+                $this->addFlash('success', 'Почта успешно обновлена');
                 return $this->redirectToRoute('profile_index');
             } catch (EmailAlreadyTakenException $e) {
                 $form->get('email')->addError(new FormError($e->getMessage()));

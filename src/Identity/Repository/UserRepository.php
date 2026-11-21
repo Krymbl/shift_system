@@ -6,8 +6,11 @@ namespace App\Identity\Repository;
 
 use App\Identity\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bridge\Doctrine\Security\User\UserLoaderInterface;
+use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
 
@@ -22,6 +25,10 @@ final class UserRepository extends ServiceEntityRepository
         parent::__construct($registry, User::class);
     }
 
+    /**
+     * @noinspection PhpDocRedundantThrowsInspection
+     * @throws UniqueConstraintViolationException
+     */
     public function save(User $user, bool $flush = true): void
     {
         $this->getEntityManager()->persist($user);
@@ -33,6 +40,8 @@ final class UserRepository extends ServiceEntityRepository
 
     /**
      * Вызывается только суперадмином в крайних случаях
+     * @noinspection PhpDocRedundantThrowsInspection
+     * @throws ForeignKeyConstraintViolationException При нарушении внешнего ключа
      */
     public function remove(User $user, bool $flush = true): void
     {
@@ -56,6 +65,11 @@ final class UserRepository extends ServiceEntityRepository
      */
     public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void
     {
+        if (!$user instanceof User) {
+            throw new UnsupportedUserException(
+                sprintf('Тип пользователя %s не поддерживается.', get_debug_type($user)),
+            );
+        }
         $user->setPassword($newHashedPassword);
         $this->flush();
     }
