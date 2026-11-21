@@ -31,33 +31,44 @@ final readonly class ClientService
      */
     public function create(ClientSaveDto $dto): Client
     {
-        return $this->entityManager->wrapInTransaction(function () use ($dto): Client
-        {
-            $userDto = $dto->userSaveDto;
-            $user = $this->userService->create($userDto);
+        try {
+            return $this->entityManager->wrapInTransaction(function () use ($dto): Client
+            {
+                $userDto = $dto->userSaveDto;
+                $user = $this->userService->create($userDto);
 
-            $client = new Client(user: $user, note: $dto->note);
-            $this->clientRepository->save($client, false);
+                $client = new Client(user: $user, note: $dto->note);
+                $this->clientRepository->save($client, false);
 
-            return $client;
-        });
-    }
-
-    public function update(Client $client, ClientSaveDto $dto): void
-    {
-        $client->setNote($dto->note);
-        $this->clientRepository->save($client);
+                return $client;
+            });
+        } catch (UniqueConstraintViolationException $e) {
+            throw $this->userService->mapUniqueViolation($e);
+        }
     }
 
     /**
+     * @throws PhoneAlreadyTakenException
+     * @throws UniqueConstraintViolationException
+     */
+    public function update(Client $client, ClientSaveDto $dto): void
+    {
+        $client->setNote($dto->note);
+        $this->userService->update($client->getUser(), $dto->userSaveDto);
+    }
+
+    /**
+     * @noinspection PhpDocRedundantThrowsInspection
      * @throws UserHasRelatedDataException
      */
     public function delete(Client $client): void
     {
         $this->entityManager->wrapInTransaction(function () use ($client): void
         {
-            $this->userService->delete($client->getUser());
+            $user = $client->getUser();
+
             $this->clientRepository->remove($client);
+            $this->userService->delete($user);
         });
     }
 
@@ -73,5 +84,10 @@ final readonly class ClientService
         }
 
         return $client;
+    }
+
+    public function getAll(): array
+    {
+        return $this->clientRepository->findAll();
     }
 }

@@ -34,12 +34,9 @@ final readonly class UserService
         'users_phone_unique' => PhoneAlreadyTakenException::class,
     ];
 
-    /**
-     * @throws EmailAlreadyTakenException
-     * @throws PhoneAlreadyTakenException
-     * @throws UniqueConstraintViolationException
-     */
+
     //TODO передавать роль при создании в userDto прокинуть роль?
+
     public function create(UserSaveDto $dto): User
     {
         $user = new User(
@@ -55,11 +52,7 @@ final readonly class UserService
         //todo пароль надо на почту отправлять или где-то его сохранять
         $user->setPassword($this->passwordHasher->hashPassword($user, $this->generatePassword()));
 
-        try {
-            $this->userRepository->save($user, false);
-        } catch (UniqueConstraintViolationException $e) {
-            throw $this->mapUniqueViolation($e);
-        }
+        $this->userRepository->save($user, false);
 
         return $user;
     }
@@ -172,11 +165,11 @@ final readonly class UserService
         return $password;
     }
 
-    //todo сделать метод публичным, как-то надо обращатсья к созданию пользователя при flush снаружи
+    //todo  метод публичным, как-то надо обращатсья к созданию пользователя при flush снаружи
     /**
      * @throws UniqueConstraintViolationException
      */
-    private function mapUniqueViolation(UniqueConstraintViolationException $e): EmailAlreadyTakenException|PhoneAlreadyTakenException
+    public function mapUniqueViolation(UniqueConstraintViolationException $e): EmailAlreadyTakenException|PhoneAlreadyTakenException
     {
         /**
          * @var class-string<EmailAlreadyTakenException|PhoneAlreadyTakenException> $exceptionClass
