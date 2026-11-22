@@ -36,7 +36,7 @@ final readonly class UserService
     ];
 
 
-    //TODO передавать роль при создании в userDto прокинуть роль?
+    //TODO передавать роль при создании в userDto прокинуть роль? Пока мне не нравится, как я это сделал
 
     public function create(UserSaveDto $dto, string $role): User
     {
@@ -143,7 +143,7 @@ final readonly class UserService
     /**
      * @throws UserNotFoundException
      */
-    public function getById(int $id): UserDto
+    public function getById(int $id): User
     {
        $user = $this->userRepository->find($id);
 
@@ -151,13 +151,13 @@ final readonly class UserService
            throw new UserNotFoundException("Пользователь с id $id не найден");
        }
 
-       return UserDto::fromUser($user);
+       return $user;
     }
 
     /**
      * @throws UserNotFoundException
      */
-    public function getByEmail(string $email): UserDto
+    public function getByEmail(string $email): User
     {
         $user = $this->userRepository->findOneBy(['email' => $email]);
 
@@ -165,11 +165,11 @@ final readonly class UserService
             throw new UserNotFoundException("Пользователь с email $email не найден");
         }
 
-        return UserDto::fromUser($user);
+        return $user;
     }
 
     /**
-     * @return list<User>
+     * @return list<UserDto>
      */
     public function getAll(): array
     {
