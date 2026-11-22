@@ -15,15 +15,14 @@ use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsCsrfTokenValid;
 
-//TODO надо, чтобы клиены подгружалисб с юзерами жадно
 #[Route(path: '/client', name: 'client_')]
 final class ClientController extends AbstractController
 {
     public function __construct(
         private readonly ClientService $clientService,
     ) {
-
     }
 
     /**
@@ -93,7 +92,7 @@ final class ClientController extends AbstractController
 
                 return $this->redirectToRoute('client_index', ['id' => $client->getId()]);
             } catch (PhoneAlreadyTakenException $e) {
-                $form->get('phone')->addError(new FormError($e->getMessage()));
+                $form->get('userSaveDto')->get('phone')->addError(new FormError($e->getMessage()));
             }
         }
 
@@ -103,16 +102,16 @@ final class ClientController extends AbstractController
     }
 
     /**
-     * todo добавить проверку csrf токена
      * @throws ClientNotFoundException
      */
     #[Route(path: '/delete/{id}', name: 'delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsCsrfTokenValid(id: 'delete_client')] //todo отлавливать исключение в глоабльном хендлере
     public function delete(int $id): Response
     {
         $client = $this->clientService->getById($id);
         try {
             $this->clientService->delete($client);
-            $this->addFlash('success', "Успешно удален клмиент с id $id");
+            $this->addFlash('success', "Успешно удален клиент с id $id");
 
             return $this->redirectToRoute('client_list');
         } catch (UserHasRelatedDataException $e) {
@@ -120,5 +119,11 @@ final class ClientController extends AbstractController
         }
 
         return $this->redirectToRoute('client_index', ['id' => $client->getId()]);
+    }
+
+    #[Route(path: '/deactivate/{id}', name: 'delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function deactivate(int $id): Response
+    {
+
     }
 }

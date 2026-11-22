@@ -35,7 +35,7 @@ final readonly class ClientService
             return $this->entityManager->wrapInTransaction(function () use ($dto): Client
             {
                 $userDto = $dto->userSaveDto;
-                $user = $this->userService->create($userDto);
+                $user = $this->userService->create($userDto, 'ROLE_CLIENT');
 
                 $client = new Client(user: $user, note: $dto->note);
                 $this->clientRepository->save($client, false);
@@ -60,6 +60,7 @@ final readonly class ClientService
     /**
      * @noinspection PhpDocRedundantThrowsInspection
      * @throws UserHasRelatedDataException
+     * todo будто если есть у юзера еще и аккаунта сотрудника, то надо спрашивать, удалять только клиента или полностью учетку с акком сотрудника
      */
     public function delete(Client $client): void
     {
@@ -75,9 +76,11 @@ final readonly class ClientService
     /**
      * @throws ClientNotFoundException
      */
-    public function getById(int $id): Client
+    public function getById(int $id, bool $withUser = true): Client
     {
-        $client = $this->clientRepository->find($id);
+        $client = $withUser
+            ? $this->clientRepository->findByIdWithUser($id)
+            : $this->clientRepository->find($id);
 
         if ($client === null) {
             throw new ClientNotFoundException($id);
@@ -86,8 +89,13 @@ final readonly class ClientService
         return $client;
     }
 
-    public function getAll(): array
+    /**
+     * @return list<Client>
+     */
+    public function getAll(bool $withUser = true): array
     {
-        return $this->clientRepository->findAll();
+        return $withUser
+            ? $this->clientRepository->findAllWithUser()
+            : $this->clientRepository->findAll();
     }
 }

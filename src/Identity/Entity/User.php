@@ -65,6 +65,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         string $email,
         string $phone,
         string $password,
+        string $role,
         string $firstName,
         string $lastName,
         ?string $patronymic = null,
@@ -74,6 +75,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->setEmail($email);
         $this->setPhone($phone);
         $this->password = $password;
+        $this->setRoles([$role]);
         $this->firstName = $firstName;
         $this->lastName = $lastName;
         $this->patronymic = $patronymic;

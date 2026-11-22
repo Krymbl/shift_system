@@ -12,9 +12,9 @@ final class UserNotFoundException extends AbstractBusinessException
     protected const int STATUS_CODE = Response::HTTP_NOT_FOUND;
 
     public function __construct(
-        int $userId,
+        string $message = 'Пользователь не найден',
         ?\Throwable $previous = null
     ) {
-        parent::__construct("Пользователь с id: $userId не найден", $previous);
+        parent::__construct($message, $previous);
     }
 }

@@ -37,12 +37,13 @@ final readonly class UserService
 
     //TODO передавать роль при создании в userDto прокинуть роль?
 
-    public function create(UserSaveDto $dto): User
+    public function create(UserSaveDto $dto, string $role): User
     {
         $user = new User(
             email: $dto->email,
             phone: $dto->phone,
             password: '',
+            role: $role,
             firstName: $dto->firstName,
             lastName: $dto->lastName,
             patronymic: $dto->patronymic,
@@ -146,10 +147,24 @@ final readonly class UserService
        $user = $this->userRepository->find($id);
 
        if ($user === null) {
-           throw new UserNotFoundException($id);
+           throw new UserNotFoundException("Пользователь с id $id не найден");
        }
 
        return $user;
+    }
+
+    /**
+     * @throws UserNotFoundException
+     */
+    public function getByEmail(string $email): User
+    {
+        $user = $this->userRepository->findOneBy(['email' => $email]);
+
+        if ($user === null) {
+            throw new UserNotFoundException("Пользователь с email $email не найден");
+        }
+
+        return $user;
     }
 
     private function generatePassword(int $length = 12): string

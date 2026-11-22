@@ -36,6 +36,33 @@ final class ClientRepository extends ServiceEntityRepository
         }
     }
 
+    /**
+     * С жадной подгрузкой юзера
+     */
+    public function findByIdWithUser(int $id): ?Client
+    {
+        return $this->createQueryBuilder('c')
+            ->innerJoin('c.user', 'u')
+            ->addSelect('u')
+            ->where('c.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * С жадной подгрузкой юзера
+     * @return list<Client>
+     */
+    public function findAllWithUser(): array
+    {
+        return $this->createQueryBuilder('c')
+            ->innerJoin('c.user', 'u')
+            ->addSelect('u')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function flush(): void
     {
         $this->getEntityManager()->flush();
