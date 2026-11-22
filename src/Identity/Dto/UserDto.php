@@ -11,6 +11,7 @@ final class UserDto
 {
     public string $email;
     public string $phone;
+    public array $roles;
     public string $lastName;
     public string $firstName;
     public ?string $patronymic = null;
@@ -22,6 +23,7 @@ final class UserDto
         $self = new self();
         $self->email = $user->getEmail();
         $self->phone = $user->getPhone();
+        $self->roles = $user->getRoles();
         $self->lastName = $user->getLastName();
         $self->firstName = $user->getFirstName();
         $self->patronymic = $user->getPatronymic();

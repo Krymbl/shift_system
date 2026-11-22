@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Identity\Service;
 
+use App\Identity\Dto\UserDto;
 use App\Identity\Dto\UserSaveDto;
 use App\Identity\Dto\UserUpdateEmailDto;
 use App\Identity\Dto\UserUpdatePasswordDto;
@@ -142,7 +143,7 @@ final readonly class UserService
     /**
      * @throws UserNotFoundException
      */
-    public function getById(int $id): User
+    public function getById(int $id): UserDto
     {
        $user = $this->userRepository->find($id);
 
@@ -150,13 +151,13 @@ final readonly class UserService
            throw new UserNotFoundException("Пользователь с id $id не найден");
        }
 
-       return $user;
+       return UserDto::fromUser($user);
     }
 
     /**
      * @throws UserNotFoundException
      */
-    public function getByEmail(string $email): User
+    public function getByEmail(string $email): UserDto
     {
         $user = $this->userRepository->findOneBy(['email' => $email]);
 
@@ -164,7 +165,22 @@ final readonly class UserService
             throw new UserNotFoundException("Пользователь с email $email не найден");
         }
 
-        return $user;
+        return UserDto::fromUser($user);
+    }
+
+    /**
+     * @return list<User>
+     */
+    public function getAll(): array
+    {
+        $users = $this->userRepository->findAll();
+
+        $result = [];
+        foreach ($users as $user) {
+            $result[] = UserDto::fromUser($user);
+        }
+
+        return $result;
     }
 
     private function generatePassword(int $length = 12): string
