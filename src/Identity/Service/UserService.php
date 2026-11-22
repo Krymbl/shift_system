@@ -93,18 +93,17 @@ final readonly class UserService
         } catch (UniqueConstraintViolationException $e) {
             throw $this->mapUniqueViolation($e);
         }
-        //todo после смены идентификатора надо в контроллере обратно сразу залогинить юзера $security->login($user);
     }
 
     public function updatePassword(User $user, UserUpdatePasswordDto $passwordDto): void
     {
         $user->setPassword($this->passwordHasher->hashPassword($user, $passwordDto->newPassword));
         $this->userRepository->save($user);
-        //todo после смены идентификатора надо в контроллере обратно сразу залогинить юзера $security->login($user);
     }
 
     /**
      * @throws UserAlreadyDeactivatedException
+     * todo проверить, что сотрудник не уволен
      */
     public function deactivate(User $user): void
     {
@@ -117,6 +116,7 @@ final readonly class UserService
 
     /**
      * @throws UserAlreadyActiveException
+     * todo проверить, что сотрудник не уволен
      */
     public function activate(User $user): void
     {
