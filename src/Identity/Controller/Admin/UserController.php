@@ -19,8 +19,7 @@ final class UserController extends AbstractController
 
     public function __construct(
         private readonly UserService $userService
-    )
-    {
+    ) {
     }
 
     /**
@@ -55,7 +54,7 @@ final class UserController extends AbstractController
     )]
     public function changeStatus(int $id, string $action, Request $request): Response
     {
-        $tokenId = 'user_' . $action;
+        $tokenId = 'user_'.$action;
 
         //todo заменить на свой exception??
         if (!$this->isCsrfTokenValid($tokenId, $request->request->getString('_token'))) {
@@ -74,7 +73,7 @@ final class UserController extends AbstractController
             }
 
             $this->addFlash('success', $message);
-        } catch (UserAlreadyActiveException | UserAlreadyDeactivatedException $e) {
+        } catch (UserAlreadyActiveException|UserAlreadyDeactivatedException $e) {
             $this->addFlash('error', $e->getMessage());
         }
 
