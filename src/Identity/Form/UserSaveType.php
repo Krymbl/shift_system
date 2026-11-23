@@ -12,14 +12,14 @@ use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Form\FormInterface;
+use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class UserSaveType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        if ($options['is_create']) {
+        if ($options['mode'] === 'create') {
             $builder
                 ->add('email', EmailType::class, [
                     'label' => 'Почта',
@@ -85,14 +85,14 @@ final class UserSaveType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => UserSaveDto::class,
-            'is_create' => false,
-            'validation_groups' => static fn(FormInterface $form) => $form->getConfig()->getOption('is_create')
+            'mode' => 'edit',
+            'validation_groups' => static fn (Options $options): array =>
+            $options['mode'] === 'create'
                 ? ['Default', 'create']
                 : ['Default'],
             'attr' => [
                 'class' => 'user-save-form',
             ],
-        ])
-            ->setAllowedTypes('is_create', 'bool');
+        ])->setAllowedValues('mode', ['create', 'edit']);
     }
 }

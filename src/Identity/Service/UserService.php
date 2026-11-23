@@ -23,18 +23,17 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 final readonly class UserService
 {
 
+    private const array UNIQUE_EXCEPTIONS = [
+        'users_email_unique' => EmailAlreadyTakenException::class,
+        'users_phone_unique' => PhoneAlreadyTakenException::class,
+    ];
+
     public function __construct(
         private UserRepository $userRepository,
         private UserPasswordHasherInterface $passwordHasher,
     )
     {
     }
-
-    private const array UNIQUE_EXCEPTIONS = [
-        'users_email_unique' => EmailAlreadyTakenException::class,
-        'users_phone_unique' => PhoneAlreadyTakenException::class,
-    ];
-
 
     //TODO передавать роль при создании в userDto прокинуть роль? Пока мне не нравится, как я это сделал
 
@@ -159,8 +158,9 @@ final readonly class UserService
      */
     public function getByEmail(string $email): User
     {
-        $user = $this->userRepository->findOneBy(['email' => $email]);
+        $email = mb_strtolower(trim($email));
 
+        $user = $this->userRepository->findOneBy(['email' => $email]);
         if ($user === null) {
             throw new UserNotFoundException("Пользователь с email $email не найден");
         }

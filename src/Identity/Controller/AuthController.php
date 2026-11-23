@@ -17,6 +17,7 @@ final class AuthController extends AbstractController
         if ($this->getUser()) {
             $this->addFlash('error', 'Вы уже вошли');
 
+            //todo прописать home роутер
             return $this->redirectToRoute('ХЗ');
         }
 

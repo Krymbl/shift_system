@@ -75,12 +75,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->setEmail($email);
         $this->setPhone($phone);
         $this->password = $password;
-        $this->setRoles([$role]);
+        $this->addRole($role);
         $this->firstName = $firstName;
         $this->lastName = $lastName;
         $this->patronymic = $patronymic;
         $this->birthday = $birthday;
         $this->gender = $gender;
+    }
+
+    public function addRole(string $role): void
+    {
+        $roles = $this->getRoles();
+        $roles[] = $role;
+        $this->setRoles($roles);
     }
 
     public function getId(): ?int
