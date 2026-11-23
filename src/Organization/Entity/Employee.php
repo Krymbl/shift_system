@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: EmployeeRepository::class)]
 #[ORM\Table(options: ['comment' => 'Сотрудники'])]
+#[ORM\UniqueConstraint(name: 'employee_user_unique', columns: ['user_id'])]
 #[ORM\HasLifecycleCallbacks]
 class Employee
 {
@@ -23,7 +24,7 @@ class Employee
     private int $balance = 0;
 
     #[ORM\OneToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(unique: true, nullable: false, onDelete: 'RESTRICT',
+    #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT',
         options: ['comment' => 'ВК Пользователь. Учётная запись сотрудника'])]
     private User $user;
 
@@ -50,6 +51,11 @@ class Employee
     public function getBalance(): int
     {
         return $this->balance;
+    }
+
+    public function getFormattedBalance(): int
+    {
+        return $this->balance / 100;
     }
 
     public function getUser(): User

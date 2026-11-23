@@ -21,7 +21,7 @@ class Client
     private ?int $id = null;
 
     #[ORM\OneToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(unique: true, nullable: false, onDelete: 'RESTRICT',
+    #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT',
         options: ['comment' => 'ВК Пользователь. Учётная запись клиента'])]
     private User $user;
 

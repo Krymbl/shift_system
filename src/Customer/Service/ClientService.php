@@ -11,6 +11,7 @@ use App\Customer\Exception\ClientAlreadyExistsException;
 use App\Customer\Exception\ClientNotFoundException;
 use App\Customer\Repository\ClientRepository;
 use App\Identity\Entity\User;
+use App\Identity\Enum\Role;
 use App\Identity\Exception\EmailAlreadyTakenException;
 use App\Identity\Exception\PhoneAlreadyTakenException;
 use App\Identity\Exception\UserHasRelatedDataException;
@@ -41,7 +42,7 @@ final readonly class ClientService
         try {
             return $this->entityManager->wrapInTransaction(function () use ($dto): Client {
                 $userDto = $dto->userSaveDto;
-                $user = $this->userService->create($userDto, 'ROLE_CLIENT');
+                $user = $this->userService->create($userDto, Role::CLIENT);
 
                 $client = new Client(user: $user, note: $dto->note);
                 $this->clientRepository->save($client, false);
@@ -74,7 +75,7 @@ final readonly class ClientService
         }
 
         $client = new Client(user: $user, note: $dto->note);
-        $user->addRole('ROLE_CLIENT');
+        $user->addRole(Role::CLIENT);
         try {
             $this->clientRepository->save($client);
         } catch (UniqueConstraintViolationException $e) {
@@ -94,7 +95,6 @@ final readonly class ClientService
         $this->entityManager->wrapInTransaction(function () use ($client): void
         {
             $user = $client->getUser();
-            $user->removeRole('ROLE_CLIENT');
 
             $this->clientRepository->remove($client);
             $this->userService->delete($user);

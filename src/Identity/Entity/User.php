@@ -7,6 +7,7 @@ namespace App\Identity\Entity;
 use App\Common\Traits\TimestampableTrait;
 use App\Common\Util\PhoneNormalizer;
 use App\Identity\Enum\Gender;
+use App\Identity\Enum\Role;
 use App\Identity\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -38,6 +39,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 255, options: ['comment' => 'Хэш пароля'])]
     private string $password;
 
+    /**
+     * @var list<Role>
+     */
     #[ORM\Column(type: 'json', options: ['default' => '[]', 'comment' => 'Роли'])]
     private array $roles = [];
 
@@ -65,7 +69,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         string $email,
         string $phone,
         string $password,
-        string $role,
+        Role $role,
         string $firstName,
         string $lastName,
         ?string $patronymic = null,
@@ -118,33 +122,42 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->password = $password;
     }
 
+    /**
+     * @return list<string>
+     */
     public function getRoles(): array
     {
-        $roles = $this->roles;
-        $roles[] = 'ROLE_USER';
-
-        return array_values(array_unique($roles));
+        return array_values(array_unique([...$this->roles, Role::USER->value]));
     }
 
+    /**
+     * @param list<Role> $roles
+     */
     public function setRoles(array $roles): void
     {
-        $roles = array_filter($roles, static fn(string $role) => $role !== 'ROLE_USER');
+        $assignedRoles = array_filter(
+            $roles,
+            static fn (Role $role): bool => $role !== Role::USER,
+        );
 
-        $this->roles = array_values(array_unique($roles));
+        $values = array_map(
+            static fn (Role $role): string => $role->value,
+            $assignedRoles,
+        );
+
+        $this->roles = array_values(array_unique($values));
     }
 
-    public function addRole(string $role): void
+    public function addRole(Role $role): void
     {
-        $roles = $this->getRoles();
-        $roles[] = $role;
-        $this->setRoles($roles);
+        if ($role !== Role::USER && !in_array($role->value, $this->roles, true)) {
+            $this->roles[] = $role->value;
+        }
     }
 
-    public function removeRole(string $role): void
+    public function removeRole(Role $role): void
     {
-        $roles = $this->getRoles();
-        unset($roles[$role]);
-        $this->setRoles($roles);
+        $this->roles = array_values(array_diff($this->roles, [$role->value]));
     }
 
     public function getFirstName(): string

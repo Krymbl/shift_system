@@ -25,7 +25,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsCsrfTokenValid;
 
-#[Route(path: '/admin/client', name: 'client_')]
+#[Route(path: '/admin/client', name: 'admin_client_',  methods: ['GET', 'POST'])]
 final class ClientController extends AbstractController
 {
     public function __construct(

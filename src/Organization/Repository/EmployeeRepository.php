@@ -36,6 +36,33 @@ final class EmployeeRepository extends ServiceEntityRepository
         }
     }
 
+    /**
+     * С жадной подгрузкой юзера
+     */
+    public function findByIdWithUser(int $id): ?Employee
+    {
+        return $this->createQueryBuilder('e')
+            ->innerJoin('e.user', 'u')
+            ->addSelect('u')
+            ->where('e.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * С жадной подгрузкой юзера
+     * @return list<Employee>
+     */
+    public function findAllWithUser(): array
+    {
+        return $this->createQueryBuilder('e')
+            ->innerJoin('e.user', 'u')
+            ->addSelect('u')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function flush(): void
     {
         $this->getEntityManager()->flush();

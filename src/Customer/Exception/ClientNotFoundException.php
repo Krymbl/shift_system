@@ -12,9 +12,9 @@ final class ClientNotFoundException extends AbstractBusinessException
     protected const int STATUS_CODE = Response::HTTP_NOT_FOUND;
 
     public function __construct(
-        int $userId,
+        int $id,
         ?\Throwable $previous = null
     ) {
-        parent::__construct("Клиент с id: $userId не найден", $previous);
+        parent::__construct("Клиент с id: $id не найден", $previous);
     }
 }

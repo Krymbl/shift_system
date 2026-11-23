@@ -9,6 +9,7 @@ use App\Identity\Dto\UserSaveDto;
 use App\Identity\Dto\UserUpdateEmailDto;
 use App\Identity\Dto\UserUpdatePasswordDto;
 use App\Identity\Entity\User;
+use App\Identity\Enum\Role;
 use App\Identity\Exception\EmailAlreadyTakenException;
 use App\Identity\Exception\PhoneAlreadyTakenException;
 use App\Identity\Exception\UserAlreadyActiveException;
@@ -37,7 +38,7 @@ final readonly class UserService
 
     //TODO передавать роль при создании в userDto прокинуть роль? Пока мне не нравится, как я это сделал
 
-    public function create(UserSaveDto $dto, string $role): User
+    public function create(UserSaveDto $dto, Role $role): User
     {
         $user = new User(
             email: $dto->email,

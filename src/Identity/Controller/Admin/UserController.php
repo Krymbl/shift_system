@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route(path: '/admin/user', name: 'admin_user', methods: ['GET', 'POST'])]
+#[Route(path: '/admin/user', name: 'admin_user_', methods: ['GET', 'POST'])]
 final class UserController extends AbstractController
 {
 
