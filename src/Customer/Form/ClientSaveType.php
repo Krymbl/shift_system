@@ -9,7 +9,7 @@ use App\Identity\Form\UserSaveType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Form\FormInterface;
+use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 
@@ -17,9 +17,8 @@ final class ClientSaveType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $builder
-            ->add('userSaveDto', UserSaveType::class, [
-                'is_create' => $options['is_create'],
+        $builder->add('userSaveDto', UserSaveType::class, [
+                'mode' => $options['mode'],
                 'label' => false,
             ])
             ->add('note', TextareaType::class, [
@@ -32,14 +31,14 @@ final class ClientSaveType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => ClientSaveDto::class,
-            'is_create' => false,
-            'validation_groups' => static fn(FormInterface $form) => $form->getConfig()->getOption('is_create')
+            'mode' => 'edit',
+            'validation_groups' => static fn (Options $options): array =>
+            $options['mode'] === 'create'
                 ? ['Default', 'create']
                 : ['Default'],
             'attr' => [
                 'class' => 'client-save-form',
             ],
-        ])
-            ->setAllowedTypes('is_create', 'bool');
+        ])->setAllowedValues('mode', ['create', 'edit']);
     }
 }

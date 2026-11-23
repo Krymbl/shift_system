@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
 #[ORM\Table(options: ['comment' => 'Клиенты'])]
+#[ORM\UniqueConstraint(name: 'client_user_unique', columns: ['user_id'])]
 #[ORM\HasLifecycleCallbacks]
 class Client
 {

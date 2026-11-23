@@ -9,8 +9,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class ClientSaveDto
 {
-    #[Assert\Valid]
     #[Assert\NotBlank(message: 'Пользователь обязателен')]
+    #[Assert\Valid]
     public ?UserSaveDto $userSaveDto = null;
 
     #[Assert\Length(

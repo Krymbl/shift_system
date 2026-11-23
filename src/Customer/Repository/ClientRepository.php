@@ -6,6 +6,7 @@ namespace App\Customer\Repository;
 
 use App\Customer\Entity\Client;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -18,6 +19,10 @@ final class ClientRepository extends ServiceEntityRepository
         parent::__construct($registry, Client::class);
     }
 
+    /**
+     * @noinspection PhpDocRedundantThrowsInspection
+     * @throws UniqueConstraintViolationException
+     */
     public function save(Client $client, bool $flush = true): void
     {
         $this->getEntityManager()->persist($client);

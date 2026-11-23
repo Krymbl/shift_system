@@ -83,13 +83,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->gender = $gender;
     }
 
-    public function addRole(string $role): void
-    {
-        $roles = $this->getRoles();
-        $roles[] = $role;
-        $this->setRoles($roles);
-    }
-
     public function getId(): ?int
     {
         return $this->id;
@@ -138,6 +131,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $roles = array_filter($roles, static fn(string $role) => $role !== 'ROLE_USER');
 
         $this->roles = array_values(array_unique($roles));
+    }
+
+    public function addRole(string $role): void
+    {
+        $roles = $this->getRoles();
+        $roles[] = $role;
+        $this->setRoles($roles);
+    }
+
+    public function removeRole(string $role): void
+    {
+        $roles = $this->getRoles();
+        unset($roles[$role]);
+        $this->setRoles($roles);
     }
 
     public function getFirstName(): string
