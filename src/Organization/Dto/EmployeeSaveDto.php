@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Organization\Dto;
 
-use App\Customer\Entity\Client;
 use App\Identity\Dto\UserSaveDto;
 use App\Organization\Entity\Employee;
 use Symfony\Component\Validator\Constraints as Assert;

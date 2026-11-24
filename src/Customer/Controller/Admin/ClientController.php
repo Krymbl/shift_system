@@ -10,6 +10,8 @@ use App\Customer\Exception\ClientAlreadyExistsException;
 use App\Customer\Exception\ClientNotFoundException;
 use App\Customer\Form\ClientLinkType;
 use App\Customer\Form\ClientSaveType;
+use App\Customer\Form\EmployeeLinkType;
+use App\Customer\Form\EmployeeSaveType;
 use App\Customer\Service\ClientService;
 use App\Identity\Dto\UserDto;
 use App\Identity\Exception\EmailAlreadyTakenException;
@@ -42,7 +44,7 @@ final class ClientController extends AbstractController
     {
         $client = $this->clientService->getById($id);
 
-        return $this->render('customer/client/index.html.twig', [
+        return $this->render('customer/admin/client/index.html.twig', [
             'client' => ClientDto::fromClient($client),
         ]);
     }
@@ -52,7 +54,7 @@ final class ClientController extends AbstractController
     {
         $clients = $this->clientService->getAll();
 
-        return $this->render('customer/client/list.html.twig', [
+        return $this->render('customer/admin/client/list.html.twig', [
             'clients' => $clients,
         ]);
     }
@@ -83,7 +85,7 @@ final class ClientController extends AbstractController
             }
         }
 
-        return $this->render('customer/client/create.html.twig', [
+        return $this->render('customer/admin/client/create.html.twig', [
             'form' => $form,
         ]);
     }
@@ -114,7 +116,7 @@ final class ClientController extends AbstractController
             }
         }
 
-        return $this->render('customer/client/edit.html.twig', [
+        return $this->render('customer/admin/client/edit.html.twig', [
             'form' => $form,
         ]);
     }
@@ -143,7 +145,7 @@ final class ClientController extends AbstractController
             }
         }
 
-        return $this->render('customer/client/link.html.twig', [
+        return $this->render('customer/admin/client/link.html.twig', [
             'form' => $form,
             'user' => UserDto::fromUser($user),
         ]);

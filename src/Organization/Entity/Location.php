@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Organization\Entity;
 
 use App\Common\Traits\TimestampableTrait;
+use App\Common\Util\PhoneNormalizer;
 use App\Organization\Repository\LocationRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -76,7 +77,7 @@ class Location
     //TODO нормализатор телефона
     public function setPhone(?string $phone): void
     {
-        $this->phone = $phone;
+        $this->phone = PhoneNormalizer::normalize($phone);
     }
 
     public function isClosed(): bool
