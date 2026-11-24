@@ -12,9 +12,9 @@ final class EmployeeNotFoundException extends AbstractBusinessException
     protected const int STATUS_CODE = Response::HTTP_NOT_FOUND;
 
     public function __construct(
-        int $id,
+        string $message = 'Сотрудник не найден',
         ?\Throwable $previous = null
     ) {
-        parent::__construct("Сотрудник с id: $id не найден", $previous);
+        parent::__construct($message, $previous);
     }
 }

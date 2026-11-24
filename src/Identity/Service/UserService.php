@@ -197,7 +197,6 @@ final readonly class UserService
         return $password;
     }
 
-    //todo  метод публичным, как-то надо обращатсья к созданию пользователя при flush снаружи
     /**
      * @throws UniqueConstraintViolationException
      */

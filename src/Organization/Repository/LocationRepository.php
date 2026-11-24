@@ -6,6 +6,8 @@ namespace App\Organization\Repository;
 
 use App\Organization\Entity\Location;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -18,6 +20,10 @@ final class LocationRepository extends ServiceEntityRepository
         parent::__construct($registry, Location::class);
     }
 
+    /**
+     * @noinspection PhpDocRedundantThrowsInspection
+     * @throws UniqueConstraintViolationException
+     */
     public function save(Location $location, bool $flush = true): void
     {
         $this->getEntityManager()->persist($location);
@@ -27,6 +33,11 @@ final class LocationRepository extends ServiceEntityRepository
         }
     }
 
+    /**
+     * Вызывается только суперадмином в крайних случаях
+     * @noinspection PhpDocRedundantThrowsInspection
+     * @throws ForeignKeyConstraintViolationException При нарушении внешнего ключа
+     */
     public function remove(Location $location, bool $flush = true): void
     {
         $this->getEntityManager()->remove($location);

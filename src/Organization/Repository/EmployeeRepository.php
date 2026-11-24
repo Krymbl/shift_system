@@ -6,6 +6,7 @@ namespace App\Organization\Repository;
 
 use App\Organization\Entity\Employee;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -18,6 +19,10 @@ final class EmployeeRepository extends ServiceEntityRepository
         parent::__construct($registry, Employee::class);
     }
 
+    /**
+     * @noinspection PhpDocRedundantThrowsInspection
+     * @throws UniqueConstraintViolationException
+     */
     public function save(Employee $employee, bool $flush = true): void
     {
         $this->getEntityManager()->persist($employee);

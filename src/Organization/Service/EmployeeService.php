@@ -14,6 +14,8 @@ use App\Identity\Service\UserService;
 use App\Organization\Dto\EmployeeSaveDto;
 use App\Organization\Entity\Employee;
 use App\Organization\Exception\EmployeeAlreadyExistsException;
+use App\Organization\Exception\EmployeeAlreadyFiredException;
+use App\Organization\Exception\EmployeeNotFiredException;
 use App\Organization\Exception\EmployeeNotFoundException;
 use App\Organization\Repository\EmployeeRepository;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -87,6 +89,7 @@ final readonly class EmployeeService
     /**
      * @noinspection PhpDocRedundantThrowsInspection
      * @throws UserHasRelatedDataException
+     * todo прокидывать EmployeeHasReleatedDataException
      * todo будто если есть у юзера еще и аккаунта клиента, то надо спрашивать, удалять только сотрудника или полностью учетку с акком клиента
      */
     public function delete(Employee $employee): void
@@ -101,6 +104,30 @@ final readonly class EmployeeService
     }
 
     /**
+     * @throws EmployeeAlreadyFiredException
+     */
+    public function fire(Employee $employee): void
+    {
+        if ($employee->isFired()) {
+            throw new EmployeeAlreadyFiredException();
+        }
+        $employee->setFiredAt(new \DateTimeImmutable());
+        $this->employeeRepository->save($employee);
+    }
+
+    /**
+     * @throws EmployeeNotFiredException
+     */
+    public function reverseFire(Employee $employee): void
+    {
+        if (!$employee->isFired()) {
+            throw new EmployeeNotFiredException();
+        }
+        $employee->setFiredAt(null);
+        $this->employeeRepository->save($employee);
+    }
+
+    /**
      * @throws EmployeeNotFoundException
      */
     public function getById(int $id, bool $withUser = true): Employee
@@ -110,7 +137,7 @@ final readonly class EmployeeService
             : $this->employeeRepository->find($id);
 
         if ($employee === null) {
-            throw new EmployeeNotFoundException($id);
+            throw new EmployeeNotFoundException();
         }
 
         return $employee;
