@@ -58,9 +58,8 @@ final class UserController extends AbstractController
     {
         $tokenId = 'user_'. $action;
 
-        //todo заменить на свой exception??
         if (!$this->isCsrfTokenValid($tokenId, $request->request->getString('_token'))) {
-            throw $this->createAccessDeniedException('Недействительный CSRF-токен.');
+            throw $this->createAccessDeniedException('Недействительный CSRF-токен');
         }
 
         $user = $this->userService->getById($id);

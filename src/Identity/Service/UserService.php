@@ -239,7 +239,7 @@ final readonly class UserService
     /**
      * @throws UserDeactivatedException
      */
-    private function ensureActive(User $user): void
+    public function ensureActive(User $user): void
     {
         if ($user->isDeactivated()) {
             throw new UserDeactivatedException();
