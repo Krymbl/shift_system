@@ -158,9 +158,8 @@ final class ClientController extends AbstractController
      */
     #[Route(path: '/delete/{id}', name: 'delete', requirements: ['id' => '\d+'], methods: ['POST'])]
     #[IsCsrfTokenValid(id: 'client_delete')] //todo отлавливать исключение в глоабльном хендлере
-    public function delete(
-        int $id
-    ): Response {
+    public function delete(int $id): Response
+    {
         $client = $this->clientService->getById($id);
         try {
             $this->clientService->delete($client);
