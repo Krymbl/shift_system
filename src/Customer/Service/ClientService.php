@@ -8,14 +8,17 @@ use App\Customer\Dto\ClientLinkDto;
 use App\Customer\Dto\ClientSaveDto;
 use App\Customer\Entity\Client;
 use App\Customer\Exception\ClientAlreadyExistsException;
+use App\Customer\Exception\ClientHasRelatedDataException;
 use App\Customer\Exception\ClientNotFoundException;
 use App\Customer\Repository\ClientRepository;
 use App\Identity\Entity\User;
 use App\Identity\Enum\Role;
-use App\Identity\Exception\EmailAlreadyTakenException;
-use App\Identity\Exception\PhoneAlreadyTakenException;
+use App\Identity\Exception\UserDeactivatedException;
+use App\Identity\Exception\UserEmailAlreadyTakenException;
+use App\Identity\Exception\UserPhoneAlreadyTakenException;
 use App\Identity\Exception\UserHasRelatedDataException;
 use App\Identity\Service\UserService;
+use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -33,8 +36,8 @@ final readonly class ClientService
     }
 
     /**
-     * @throws PhoneAlreadyTakenException
-     * @throws EmailAlreadyTakenException
+     * @throws UserPhoneAlreadyTakenException
+     * @throws UserEmailAlreadyTakenException
      * @throws UniqueConstraintViolationException
      */
     public function create(ClientSaveDto $dto): Client
@@ -55,8 +58,9 @@ final readonly class ClientService
     }
 
     /**
-     * @throws PhoneAlreadyTakenException
+     * @throws UserPhoneAlreadyTakenException
      * @throws UniqueConstraintViolationException
+     * @throws UserDeactivatedException
      */
     public function update(Client $client, ClientSaveDto $dto): void
     {
@@ -67,12 +71,15 @@ final readonly class ClientService
     /**
      * @throws ClientAlreadyExistsException
      * @throws UniqueConstraintViolationException
+     * @throws UserDeactivatedException
      */
     public function link(ClientLinkDto $dto, User $user): Client
     {
         if ($this->clientRepository->findOneBy(['user' => $user]) !== null) {
             throw new ClientAlreadyExistsException();
         }
+
+        $this->userService->ensureActive($user);
 
         $client = new Client(user: $user, note: $dto->note);
         $user->addRole(Role::CLIENT);
@@ -86,19 +93,21 @@ final readonly class ClientService
     }
 
     /**
-     * @noinspection PhpDocRedundantThrowsInspection
-     * @throws UserHasRelatedDataException
+     * @throws ClientHasRelatedDataException
      * todo будто если есть у юзера еще и аккаунта сотрудника, то надо спрашивать, удалять только клиента или полностью учетку с акком сотрудника
      */
     public function delete(Client $client): void
     {
-        $this->entityManager->wrapInTransaction(function () use ($client): void
-        {
-            $user = $client->getUser();
+        try {
+            $this->entityManager->wrapInTransaction(function () use ($client): void
+            {
+                $client->getUser()->removeRole(Role::CLIENT);
+                $this->clientRepository->remove($client);
+            });
+        } catch (ForeignKeyConstraintViolationException $e) {
+            throw new ClientHasRelatedDataException();
+        }
 
-            $this->clientRepository->remove($client);
-            $this->userService->delete($user);
-        });
     }
 
     /**

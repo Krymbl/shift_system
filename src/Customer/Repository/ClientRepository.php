@@ -6,6 +6,7 @@ namespace App\Customer\Repository;
 
 use App\Customer\Entity\Client;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -32,6 +33,11 @@ final class ClientRepository extends ServiceEntityRepository
         }
     }
 
+    /**
+     * Вызывается только суперадмином в крайних случаях
+     * @noinspection PhpDocRedundantThrowsInspection
+     * @throws ForeignKeyConstraintViolationException При нарушении внешнего ключа
+     */
     public function remove(Client $client, bool $flush = true): void
     {
         $this->getEntityManager()->remove($client);

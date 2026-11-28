@@ -10,6 +10,7 @@ use App\Identity\Enum\Gender;
 
 final class ClientDto
 {
+    public int $id;
     public string $email;
     public string $phone;
     public string $lastName;
@@ -22,8 +23,9 @@ final class ClientDto
     public static function fromClient(Client $client): self
     {
         $self = new self();
-
         $user = $client->getUser();
+
+        $self->id = $user->getId();
         $self->note = $client->getNote();
         $self->email = $user->getEmail();
         $self->phone = $user->getPhone();

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Customer\Controller\Admin;
@@ -7,17 +8,16 @@ use App\Customer\Dto\ClientDto;
 use App\Customer\Dto\ClientLinkDto;
 use App\Customer\Dto\ClientSaveDto;
 use App\Customer\Exception\ClientAlreadyExistsException;
+use App\Customer\Exception\ClientHasRelatedDataException;
 use App\Customer\Exception\ClientNotFoundException;
 use App\Customer\Form\ClientLinkType;
 use App\Customer\Form\ClientSaveType;
-use App\Customer\Form\EmployeeLinkType;
-use App\Customer\Form\EmployeeSaveType;
 use App\Customer\Service\ClientService;
 use App\Identity\Dto\UserDto;
-use App\Identity\Exception\EmailAlreadyTakenException;
-use App\Identity\Exception\PhoneAlreadyTakenException;
-use App\Identity\Exception\UserHasRelatedDataException;
+use App\Identity\Exception\UserDeactivatedException;
+use App\Identity\Exception\UserEmailAlreadyTakenException;
 use App\Identity\Exception\UserNotFoundException;
+use App\Identity\Exception\UserPhoneAlreadyTakenException;
 use App\Identity\Service\UserService;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -27,7 +27,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsCsrfTokenValid;
 
-#[Route(path: '/admin/client', name: 'admin_client_',  methods: ['GET', 'POST'])]
+#[Route(path: '/admin/client', name: 'admin_client_')]
 final class ClientController extends AbstractController
 {
     public function __construct(
@@ -49,7 +49,7 @@ final class ClientController extends AbstractController
         ]);
     }
 
-    #[Route(path: '/list', name: 'list', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[Route(path: '/', name: 'list', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function list(): Response
     {
         $clients = $this->clientService->getAll();
@@ -73,10 +73,10 @@ final class ClientController extends AbstractController
                 $client = $this->clientService->create($dto);
                 $this->addFlash('success', 'Клиент создан');
 
-                return $this->redirectToRoute('client_index', ['id' => $client->getId()]);
-            } catch (PhoneAlreadyTakenException $e) {
+                return $this->redirectToRoute('admin_client_index', ['id' => $client->getId()]);
+            } catch (UserPhoneAlreadyTakenException $e) {
                 $form->get('userSaveDto')->get('phone')->addError(new FormError($e->getMessage()));
-            } catch (EmailAlreadyTakenException $e) {
+            } catch (UserEmailAlreadyTakenException $e) {
                 $this->addFlash(
                     'notice',
                     'Аккаунт с такой почтой уже существует, привязать клиента к этому аккаунту?'
@@ -110,9 +110,11 @@ final class ClientController extends AbstractController
                 $this->clientService->update($client, $dto);
                 $this->addFlash('success', 'Данные клиента обновлены');
 
-                return $this->redirectToRoute('client_index', ['id' => $client->getId()]);
-            } catch (PhoneAlreadyTakenException $e) {
+                return $this->redirectToRoute('admin_client_index', ['id' => $client->getId()]);
+            } catch (UserPhoneAlreadyTakenException $e) {
                 $form->get('userSaveDto')->get('phone')->addError(new FormError($e->getMessage()));
+            } catch (UserDeactivatedException $e) {
+                $this->addFlash('error', $e->getMessage());
             }
         }
 
@@ -139,9 +141,9 @@ final class ClientController extends AbstractController
                 $client = $this->clientService->link($dto, $user);
                 $this->addFlash('success', 'Клиент создан');
 
-                return $this->redirectToRoute('client_index', ['id' => $client->getId()]);
-            } catch (ClientAlreadyExistsException $e) {
-                $form->addError(new FormError($e->getMessage()));
+                return $this->redirectToRoute('admin_client_index', ['id' => $client->getId()]);
+            } catch (ClientAlreadyExistsException|UserDeactivatedException $e) {
+                $this->addFlash('error', $e->getMessage());
             }
         }
 
@@ -155,16 +157,17 @@ final class ClientController extends AbstractController
      * @throws ClientNotFoundException
      */
     #[Route(path: '/delete/{id}', name: 'delete', requirements: ['id' => '\d+'], methods: ['POST'])]
-    #[IsCsrfTokenValid(id: 'delete_client')] //todo отлавливать исключение в глоабльном хендлере
-    public function delete(int $id): Response
-    {
+    #[IsCsrfTokenValid(id: 'client_delete')] //todo отлавливать исключение в глоабльном хендлере
+    public function delete(
+        int $id
+    ): Response {
         $client = $this->clientService->getById($id);
         try {
             $this->clientService->delete($client);
             $this->addFlash('success', "Успешно удален клиент с id $id");
 
-            return $this->redirectToRoute('client_list');
-        } catch (UserHasRelatedDataException $e) {
+            return $this->redirectToRoute('admin_client_list');
+        } catch (ClientHasRelatedDataException $e) {
             $this->addFlash('error', $e->getMessage());
         }
 
