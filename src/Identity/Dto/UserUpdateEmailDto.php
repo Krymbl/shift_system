@@ -29,7 +29,7 @@ final class UserUpdateEmailDto {
         maxMessage: 'Почта должна содержать не больше {{ limit }} символов',
     )]
     public ?string $email = null {
-        set => mb_strtolower(trim($value));
+        set => $value === null ? null : mb_strtolower(trim($value));
     }
 
     #[Assert\NotBlank(message: 'Введите текущий пароль')]
