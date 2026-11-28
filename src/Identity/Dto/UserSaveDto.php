@@ -16,6 +16,7 @@ use Symfony\Component\Validator\Constraints as Assert;
     entityClass: User::class,
     errorPath: 'email',
     identifierFieldNames: ['id'],
+    groups: ['create']
 )]
 #[UniqueEntity(
     fields: ['phone'],
@@ -36,7 +37,7 @@ final class UserSaveDto
         groups: ['create']
     )]
     public ?string $email = null {
-        set => mb_strtolower(trim($value));
+        set => $value === null ? null : mb_strtolower(trim($value));
     }
 
     #[Assert\NotBlank(message: 'Телефон обязателен')]
@@ -66,6 +67,10 @@ final class UserSaveDto
     )]
     public ?string $patronymic = null;
 
+    #[Assert\LessThanOrEqual(
+        value: 'today',
+        message: 'Дата рождения не может быть в будущем.',
+    )]
     public ?\DateTimeImmutable $birthday = null;
 
     public ?Gender $gender = null;

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Identity\Controller\Admin;
 
+use App\Identity\Dto\UserDto;
 use App\Identity\Exception\UserAlreadyActiveException;
 use App\Identity\Exception\UserAlreadyDeactivatedException;
+use App\Identity\Exception\UserHasActiveEmploymentException;
 use App\Identity\Exception\UserNotFoundException;
 use App\Identity\Service\UserService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -13,7 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route(path: '/admin/user', name: 'admin_user_', methods: ['GET', 'POST'])]
+#[Route(path: '/admin/user', name: 'admin_user_')]
 final class UserController extends AbstractController
 {
 
@@ -25,17 +27,17 @@ final class UserController extends AbstractController
     /**
      * @throws UserNotFoundException
      */
-    #[Route(path: '/index/{id}', name: 'index', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[Route(path: '/{id}', name: 'index', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function index(int $id): Response
     {
-        $userDto = $this->userService->getById($id);
+        $user = $this->userService->getById($id);
 
         return $this->render('identity/admin/user/index.html.twig', [
-            'user' => $userDto,
+            'user' => UserDto::fromUser($user),
         ]);
     }
 
-    #[Route(path: '/list', name: 'list', methods: ['GET'])]
+    #[Route(path: '/', name: 'list', methods: ['GET'])]
     public function list(): Response
     {
         return $this->render('identity/admin/user/list.html.twig', [
@@ -54,7 +56,7 @@ final class UserController extends AbstractController
     )]
     public function changeStatus(int $id, string $action, Request $request): Response
     {
-        $tokenId = 'user_'.$action;
+        $tokenId = 'user_'. $action;
 
         //todo заменить на свой exception??
         if (!$this->isCsrfTokenValid($tokenId, $request->request->getString('_token'))) {
@@ -73,7 +75,7 @@ final class UserController extends AbstractController
             }
 
             $this->addFlash('success', $message);
-        } catch (UserAlreadyActiveException|UserAlreadyDeactivatedException $e) {
+        } catch (UserAlreadyActiveException|UserAlreadyDeactivatedException|UserHasActiveEmploymentException $e) {
             $this->addFlash('error', $e->getMessage());
         }
 

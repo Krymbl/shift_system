@@ -15,7 +15,7 @@ final class UserHasRelatedDataException extends AbstractBusinessException
         int $userId,
         ?\Throwable $previous = null
     ) {
-        parent::__construct("� ������������ id: $userId ���� ������, ��� ����� ������ ��������������", $previous);
+        parent::__construct("У пользователя id: $userId есть связанные данные", $previous);
     }
 
 }

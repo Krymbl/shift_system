@@ -7,7 +7,7 @@ namespace App\Identity\Exception;
 use App\Common\Exception\AbstractBusinessException;
 use Symfony\Component\HttpFoundation\Response;
 
-final class PhoneAlreadyTakenException extends AbstractBusinessException
+final class UserPhoneAlreadyTakenException extends AbstractBusinessException
 {
     protected const int STATUS_CODE = Response::HTTP_CONFLICT;
 

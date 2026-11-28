@@ -9,6 +9,7 @@ use App\Identity\Enum\Gender;
 
 final class UserDto
 {
+    public int $id;
     public string $email;
     public string $phone;
     public array $roles;
@@ -17,10 +18,13 @@ final class UserDto
     public ?string $patronymic = null;
     public ?\DateTimeImmutable $birthday = null;
     public ?Gender $gender = null;
+    public ?\DateTimeImmutable $deactivatedAt = null;
+
 
     public static function fromUser(User $user): self
     {
         $self = new self();
+        $self->id = $user->getId();
         $self->email = $user->getEmail();
         $self->phone = $user->getPhone();
         $self->roles = $user->getRoles();
@@ -29,6 +33,7 @@ final class UserDto
         $self->patronymic = $user->getPatronymic();
         $self->birthday = $user->getBirthday();
         $self->gender = $user->getGender();
+        $self->deactivatedAt = $user->getDeactivatedAt();
 
         return $self;
     }

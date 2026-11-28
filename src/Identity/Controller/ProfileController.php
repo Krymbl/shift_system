@@ -9,8 +9,9 @@ use App\Identity\Dto\UserSaveDto;
 use App\Identity\Dto\UserUpdateEmailDto;
 use App\Identity\Dto\UserUpdatePasswordDto;
 use App\Identity\Entity\User;
-use App\Identity\Exception\EmailAlreadyTakenException;
-use App\Identity\Exception\PhoneAlreadyTakenException;
+use App\Identity\Exception\UserDeactivatedException;
+use App\Identity\Exception\UserEmailAlreadyTakenException;
+use App\Identity\Exception\UserPhoneAlreadyTakenException;
 use App\Identity\Form\UserSaveType;
 use App\Identity\Form\UserUpdateEmailType;
 use App\Identity\Form\UserUpdatePasswordType;
@@ -23,7 +24,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
-#[Route(path: '/profile', name: 'profile_', methods: ['GET', 'POST'])]
+#[Route(path: '/profile', name: 'profile_')]
 final class ProfileController extends AbstractController
 {
 
@@ -58,8 +59,10 @@ final class ProfileController extends AbstractController
                 $this->addFlash('success', 'Данные учетной записи обновлены');
 
                 return $this->redirectToRoute('profile_index');
-            } catch (PhoneAlreadyTakenException $e) {
+            } catch (UserPhoneAlreadyTakenException $e) {
                 $form->get('phone')->addError(new FormError($e->getMessage()));
+            } catch (UserDeactivatedException $e) {
+                $this->addFlash('error', $e->getMessage());
             }
         }
 
@@ -69,17 +72,21 @@ final class ProfileController extends AbstractController
     }
 
     #[Route(path: '/password', name: 'password_change', methods: ['GET', 'POST'])]
-    public function passwordChange(#[CurrentUser] User $user, Request $request): Response
+    public function changePassword(#[CurrentUser] User $user, Request $request): Response
     {
         $dto = new UserUpdatePasswordDto();
         $form = $this->createForm(UserUpdatePasswordType::class, $dto);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->userService->updatePassword($user, $dto);
+            try {
+                $this->userService->updatePassword($user, $dto);
 
-            $this->addFlash('success', 'Пароль успешно обновлен');
-            return $this->redirectToRoute('profile_index');
+                $this->addFlash('success', 'Пароль успешно обновлен');
+                return $this->redirectToRoute('profile_index');
+            } catch (UserDeactivatedException $e) {
+                $this->addFlash('error', $e->getMessage());
+            }
         }
 
         return $this->render('identity/user/ХЗ', [
@@ -91,7 +98,7 @@ final class ProfileController extends AbstractController
      * @throws UniqueConstraintViolationException
      */
     #[Route(path: '/email', name: 'email_change', methods: ['GET', 'POST'])]
-    public function emailChange(#[CurrentUser] User $user, Request $request): Response
+    public function changeEmail(#[CurrentUser] User $user, Request $request): Response
     {
         $dto = UserUpdateEmailDto::fromUser($user);
         $form = $this->createForm(UserUpdateEmailType::class, $dto);
@@ -103,8 +110,10 @@ final class ProfileController extends AbstractController
 
                 $this->addFlash('success', 'Почта успешно обновлена');
                 return $this->redirectToRoute('profile_index');
-            } catch (EmailAlreadyTakenException $e) {
+            } catch (UserEmailAlreadyTakenException $e) {
                 $form->get('email')->addError(new FormError($e->getMessage()));
+            } catch (UserDeactivatedException $e) {
+                $this->addFlash('error', $e->getMessage());
             }
         }
 

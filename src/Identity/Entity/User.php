@@ -40,7 +40,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private string $password;
 
     /**
-     * @var list<Role>
+     * @var list<string>
      */
     #[ORM\Column(type: 'json', options: ['default' => '[]', 'comment' => 'Роли'])]
     private array $roles = [];
@@ -210,9 +210,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->gender = $gender;
     }
 
-    public function isActive(): bool
+    public function isDeactivated(): bool
     {
-        return $this->deactivatedAt === null;
+        return $this->deactivatedAt !== null;
     }
 
     public function getDeactivatedAt(): ?\DateTimeImmutable

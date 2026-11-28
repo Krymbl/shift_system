@@ -10,13 +10,16 @@ use App\Identity\Dto\UserUpdateEmailDto;
 use App\Identity\Dto\UserUpdatePasswordDto;
 use App\Identity\Entity\User;
 use App\Identity\Enum\Role;
-use App\Identity\Exception\EmailAlreadyTakenException;
-use App\Identity\Exception\PhoneAlreadyTakenException;
+use App\Identity\Exception\UserDeactivatedException;
+use App\Identity\Exception\UserEmailAlreadyTakenException;
+use App\Identity\Exception\UserHasActiveEmploymentException;
+use App\Identity\Exception\UserPhoneAlreadyTakenException;
 use App\Identity\Exception\UserAlreadyActiveException;
 use App\Identity\Exception\UserAlreadyDeactivatedException;
 use App\Identity\Exception\UserHasRelatedDataException;
 use App\Identity\Exception\UserNotFoundException;
 use App\Identity\Repository\UserRepository;
+use App\Organization\Repository\EmployeeRepository;
 use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -25,12 +28,13 @@ final readonly class UserService
 {
 
     private const array UNIQUE_EXCEPTIONS = [
-        'users_email_unique' => EmailAlreadyTakenException::class,
-        'users_phone_unique' => PhoneAlreadyTakenException::class,
+        'users_email_unique' => UserEmailAlreadyTakenException::class,
+        'users_phone_unique' => UserPhoneAlreadyTakenException::class,
     ];
 
     public function __construct(
         private UserRepository $userRepository,
+        private EmployeeRepository $employeeRepository,
         private UserPasswordHasherInterface $passwordHasher,
     )
     {
@@ -60,17 +64,20 @@ final readonly class UserService
     }
 
     /**
-     * @throws PhoneAlreadyTakenException
+     * @throws UserPhoneAlreadyTakenException
      * @throws UniqueConstraintViolationException
+     * @throws UserDeactivatedException
      */
     public function update(User $user, UserSaveDto $dto): void
     {
-       $user->setPhone($dto->phone);
-       $user->setLastName($dto->lastName);
-       $user->setFirstName($dto->firstName);
-       $user->setPatronymic($dto->patronymic);
-       $user->setBirthday($dto->birthday);
-       $user->setGender($dto->gender);
+        $this->ensureActive($user);
+
+        $user->setPhone($dto->phone);
+        $user->setLastName($dto->lastName);
+        $user->setFirstName($dto->firstName);
+        $user->setPatronymic($dto->patronymic);
+        $user->setBirthday($dto->birthday);
+        $user->setGender($dto->gender);
 
         try {
             $this->userRepository->save($user);
@@ -80,11 +87,14 @@ final readonly class UserService
     }
 
     /**
-     * @throws EmailAlreadyTakenException
+     * @throws UserEmailAlreadyTakenException
      * @throws UniqueConstraintViolationException
+     * @throws UserDeactivatedException
      */
     public function updateEmail(User $user, UserUpdateEmailDto $emailDto): void
     {
+        $this->ensureActive($user);
+
         $email = $emailDto->email;
 
         $user->setEmail($email);
@@ -95,21 +105,33 @@ final readonly class UserService
         }
     }
 
+    /**
+     * @throws UniqueConstraintViolationException
+     * @throws UserDeactivatedException
+     */
     public function updatePassword(User $user, UserUpdatePasswordDto $passwordDto): void
     {
+        $this->ensureActive($user);
+
         $user->setPassword($this->passwordHasher->hashPassword($user, $passwordDto->newPassword));
         $this->userRepository->save($user);
     }
 
     /**
      * @throws UserAlreadyDeactivatedException
+     * @throws UserHasActiveEmploymentException
      * todo проверить, что сотрудник не уволен
      */
     public function deactivate(User $user): void
     {
-        if (!$user->isActive()) {
+        if ($user->isDeactivated()) {
             throw new UserAlreadyDeactivatedException();
         }
+
+        if ($this->employeeRepository->hasActiveEmployment($user)) {
+            throw new UserHasActiveEmploymentException();
+        }
+
         $user->setDeactivatedAt(new \DateTimeImmutable());
         $this->userRepository->save($user);
     }
@@ -120,7 +142,7 @@ final readonly class UserService
      */
     public function activate(User $user): void
     {
-        if ($user->isActive()) {
+        if (!$user->isDeactivated()) {
             throw new UserAlreadyActiveException();
         }
         $user->setDeactivatedAt(null);
@@ -200,10 +222,10 @@ final readonly class UserService
     /**
      * @throws UniqueConstraintViolationException
      */
-    public function mapUniqueViolation(UniqueConstraintViolationException $e): EmailAlreadyTakenException|PhoneAlreadyTakenException
+    public function mapUniqueViolation(UniqueConstraintViolationException $e): UserEmailAlreadyTakenException|UserPhoneAlreadyTakenException
     {
         /**
-         * @var class-string<EmailAlreadyTakenException|PhoneAlreadyTakenException> $exceptionClass
+         * @var class-string<UserEmailAlreadyTakenException|UserPhoneAlreadyTakenException> $exceptionClass
          */
         foreach (self::UNIQUE_EXCEPTIONS as $indexName => $exceptionClass) {
             if (str_contains($e->getMessage(), $indexName)) {
@@ -212,5 +234,15 @@ final readonly class UserService
         }
 
         throw $e;
+    }
+
+    /**
+     * @throws UserDeactivatedException
+     */
+    private function ensureActive(User $user): void
+    {
+        if ($user->isDeactivated()) {
+            throw new UserDeactivatedException();
+        }
     }
 }
